@@ -6,6 +6,7 @@ library(imager)
 library(mmand)
 library(e1071)
 library(wavelets)
+library(glcm)
 
 plot_matrix <- function(m){
   dx = dim(m)[1]
@@ -262,13 +263,21 @@ image(t(limpo), col=grey(0:64/64))
 limpo[limpo == 1] = 0
 limpo[limpo != 0] = 1
 
+##### Extracao de características de textura #####
+
 detalhes = limpo*morfo
 
-detalhes = limpo[1:128, 1:128]
+plot_matrix(detalhes)
+
+dim(detalhes)
+
+detalhes = detalhes[1:192, 1:192]
 
 plot_matrix(detalhes)
 detalhes=dwt_matrix(detalhes)
 plot_matrix(detalhes)
 
+class(detalhes)
+dim(detalhes)
 
-
+hist(detalhes)

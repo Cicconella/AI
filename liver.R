@@ -54,15 +54,9 @@ Mode <- function(x) {
 
 ### Para um arquivo ###
 
+dir = "/media/cicconella/8AA6013CA6012A71/Users/Nina/Documents/Machiron/52490000/52490000/"
 
-fname <-  c("/home/cicconella/Desktop/52490000/52490000/65643294")
-#fname <-  c("/home/cicconella/Desktop/52490000/52490000/65647276")
-#fname <-  c("/home/cicconella/Desktop/52490000/52490000/65646836")
-#fname <-  c("/home/cicconella/Desktop/52490000/52490000/65646946")
-
-fname <-  c("/home/cicconella/Desktop/52490000/52490000/65653187")
-fname <-  c("/home/cicconella/Desktop/52490000/52490000/65643690")
-fname <-  c("/home/cicconella/Desktop/52490000/52490000/65662305")
+fname <-  paste(dir, "65643294", sep="")
 
 abdo <- readDICOMFile(fname)
 names(abdo)
@@ -79,9 +73,7 @@ which(abdo$hdr[,3]=="SliceLocation")
 abdo$hdr[110,6]
 
 
-#png("/home/cicconella/Desktop/52490000/tm1.png")
 image(t(abdo$img), col=grey(0:64/64), axes=FALSE, xlab="", ylab="")
-#dev.off()
 
 dim(abdo$img)
 
@@ -266,8 +258,6 @@ limpo = closing(limpo, kernel)
 limpo = opening(limpo, kernel)
 
 image(t(limpo), col=grey(0:64/64))
-
-
 
 limpo[limpo == 1] = 0
 limpo[limpo != 0] = 1

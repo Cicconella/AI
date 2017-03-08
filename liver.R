@@ -272,6 +272,7 @@ image(t(limpo), col=grey(0:64/64))
 limpo[limpo == 1] = 0
 limpo[limpo != 0] = 1
 
+detalhes = limpo*morfo
 
 detalhes = limpo[1:128, 1:128]
 

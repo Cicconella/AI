@@ -42,3 +42,5 @@ plot_matrix(m2t)
 # Teste com numeros
 m = t(matrix(1:16,nrow=4))
 mt=dwt_matrix(m)
+
+print("Oi N")

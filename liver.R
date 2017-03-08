@@ -273,9 +273,11 @@ limpo[limpo == 1] = 0
 limpo[limpo != 0] = 1
 
 
-plot_matrix(m2)
-m2t=dwt_matrix(m2)
-plot_matrix(m2t)
+detalhes = limpo[1:128, 1:128]
+
+plot_matrix(detalhes)
+detalhes=dwt_matrix(detalhes)
+plot_matrix(detalhes)
 
 
 

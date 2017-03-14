@@ -1,17 +1,21 @@
 #### Libraries and functions ####
 
 #install.packages("oro.dicom")
-library(oro.dicom)
-library(imager)
-library(mmand)
-library(e1071)
-library(wavelets)
-library(glcm)
+library(oro.dicom) # Leitura do arquivo DICOM
+library(imager) # Blur da imagem
+library(mmand) # Operacoes morfologicas (abertura e fechamento) 
+library(e1071) #Clusterizacao FCM
+library(wavelets) # Realizar transformacao DWT
+library(radiomics) # Gerar a matrix GLCM e extrair features
 
-plot_matrix <- function(m){
+plot_image <- function(m,nome){
+  image(t(m), col=grey(0:64/64), axes=FALSE, xlab=nome, ylab="")
+}
+
+plot_matrix <- function(m, nome){
   dx = dim(m)[1]
   dy = dim(m)[2]
-  image(t(m[nrow(m):1,]),col=grey(0:64/64), axes=FALSE,xlab="", ylab="")  
+  plot_image(m[nrow(m):1,],nome)  
 }
 
 dwt_rows <- function(m){
@@ -55,31 +59,30 @@ Mode <- function(x) {
 
 ### Para um arquivo ###
 
-dir = "/media/cicconella/8AA6013CA6012A71/Users/Nina/Documents/Machiron/52490000/52490000/"
-
-fname <-  paste(dir, "65643294", sep="")
+#dir = "/media/cicconella/8AA6013CA6012A71/Users/Nina/Documents/Machiron/52490000/52490000/"
+dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 5/"
+filename = "1.2.840.113619.2.327.3.1091195278.42.1381225064.881.121.dcm"
+#filename = 65643294
+fname <-  paste(dir, filename, sep="")
 
 abdo <- readDICOMFile(fname)
-names(abdo)
+#names(abdo)
 
-abdo$hdr
-
-abdo$hdr[abdo$hdr$name == "ContrastBolusStartTime",]
+#abdo$hdr
 abdo$hdr[abdo$hdr$name == "StudyDescription",]
+abdo$hdr[abdo$hdr$name == "SeriesDescription",]
 
-dim(abdo$hdr)
+#dim(abdo$hdr)
 abdo$hdr[30,]
 abdo$hdr[12,]
 which(abdo$hdr[,3]=="SliceLocation")
-abdo$hdr[110,6]
+abdo$hdr[125,6]
 
 
-image(t(abdo$img), col=grey(0:64/64), axes=FALSE, xlab="", ylab="")
-
+plot_image(abdo$img, "Original")
 dim(abdo$img)
 
 a = abdo$img
-
 dim(a)
 
 #min(apply(a, 1, min))
@@ -108,7 +111,7 @@ for(i in 1:dim(a)[1]){
    a[i,j] = normaliza(a[i,j], lo, hi) 
   }
 }
-
+plot_image(normalizada, "Normalizada")
 #hist(a[a>0])
 
 min(a)
@@ -117,59 +120,40 @@ max(a)
 dim(a)
 
 normalizada = a
-
 rm(a)
 
 ##### Recorte da janela com o figado #####  
-
+dim(normalizada)
+pikachu = dim(normalizada)[1]
+min_x = floor(pikachu*0.75)+1
+max_x = pikachu
+min_y = 0
+max_y = floor(pikachu*0.25)
 
 janela = normalizada
-janela = janela[,-c(256:512)]
-janela = janela[-c(0:128),]
+janela = janela[,-c(min_x:max_x)]
+janela = janela[-c(min_y:max_y),]
 janela = janela[,-which((apply(janela, 2, sum))==0)]
 janela = janela[-which((apply(janela, 1, sum))==0),]
-  
-dim(janela)
-janela = normalizada
-janela = janela[,-c(256:512)]
-janela = janela[-c(0:128),]
-janela = janela[,-which((apply(janela, 2, sum))==0)]
-janela = janela[-which((apply(janela, 1, sum))==0),]
-  
-dim(janela)
-  
-    
-image(t(janela), col=grey(0:64/64))
+
+plot_image(janela, "Janela")
 
 ##### Filtro anisotropico #####
 
-# png("/home/cicconella/Desktop/52490000/normalizada.png")
-#image(t(janela), col=grey(0:64/64), axes=FALSE, xlab="", ylab="")
 filtrada = as.cimg(janela)
-#plot(filtrada, axes = F, xlab = "", ylab = "")
-# dev.off()
 tmp = proc.time() 
 filtrada = blur_anisotropic(filtrada,ampl=1e4,sharp=1) 
 proc.time()-tmp 
-#plot(filtrada, axes = F, xlab = "", ylab = "")
 
 filtrada = as.matrix(filtrada)
-head(filtrada)
-dim(filtrada)
-
-image(t(filtrada), col=grey(0:64/64), axes=FALSE, xlab="", ylab="")
+plot_image(filtrada, "Filtrada")
 
 ##### Analise do histograma #####
 
 #hist(filtrada, nc=100)
 #hist(filtrada[-c(which(filtrada<50), which(filtrada>225))], nc = 1000)
-
 filtrada = round(filtrada)
-
-#image(t(filtrada), col=grey(0:64/64), axes=FALSE, xlab="", ylab="")
-
 moda = Mode(filtrada[-c(which(filtrada<50), which(filtrada>225))])
-
 dp = 25
 
 ##### Aplicacoes morofologicas #####
@@ -181,30 +165,21 @@ binaria[binaria<(moda-dp)] = 0
 binaria[binaria!=0] = 1
 
 
-#image(t(binaria), col=grey(0:64/64))
+plot_image(binaria, "Binaria Pre Morfo")
 
 kernel <- shapeKernel(c(13,13), type="disc")
 
 binaria = opening(binaria, kernel)
 binaria = closing(binaria, kernel)
 
-#image(t(binaria), col=grey(0:64/64))
-#image(t(filtrada), col=grey(0:64/64))
+plot_image(binaria, "Binaria Pos Morfo")
 
 morfo = binaria * filtrada
 
 #morfo = morfo[-which(apply(morfo, 1, sum)==0),]
 #morfo = morfo[,-which(apply(morfo, 2, sum)==0)]
-
-max(morfo)
-
-#image(t(morfo), col=grey(0:(64*194/255)/64))
-
-#hist(morfo, nc = 1000)
-
+plot_image(morfo, "Morfo")
 #hist(morfo[morfo>150], nc = 1000)
-
-#morfo = morfo[1:121,1:75]
 
 ##### FCM #####
 
@@ -212,16 +187,10 @@ linha = as.vector(morfo)
 length(linha)
 
 #hist(morfo[morfo>100], nc=100)
-
-# tmp=proc.time()
-# resultado = fanny(linha, k=3, metric = "man", cluster.only = TRUE, memb.exp = 1.5)
-# proc.time()-tmp
-
 tmp=proc.time()
 resultado = cmeans(linha, iter.max = 150, centers=c(0, moda/2, moda), dist = "manhattan", m = 1.5)
 proc.time()-tmp
-
-(resultado$centers)
+#(resultado$centers)
 
 #dim(resultado$membership)
 
@@ -249,7 +218,7 @@ proc.time()-tmp
 
 cluster = matrix(resultado$cluster, nrow = dim(morfo)[1])
 
-image(t(cluster), col=grey(0:64/64))
+plot_image(cluster,"Clusters")
 
 kernel = shapeKernel(c(5,5), type="disc")
 
@@ -258,26 +227,31 @@ limpo = cluster
 limpo = closing(limpo, kernel)
 limpo = opening(limpo, kernel)
 
-image(t(limpo), col=grey(0:64/64))
+plot_image(limpo, "Limpo Clusters")
 
 limpo[limpo == 1] = 0
 limpo[limpo != 0] = 1
 
-##### Extracao de características de textura #####
+##### Extracao de caracteristicas de textura #####
 
 detalhes = limpo*morfo
 
-plot_matrix(detalhes)
+plot_matrix(detalhes, "Lesao")
 
-dim(detalhes)
+M = min(dim(detalhes)) 
+if (M%%2 == 1) M = M-1
+detalhes = detalhes[1:M, 1:M]
 
-detalhes = detalhes[1:192, 1:192]
+plot_matrix(detalhes, "Janela Detalhes")
+dwt_detalhes=dwt_matrix(detalhes)
+plot_matrix(dwt_detalhes, "Detalhes")
 
-plot_matrix(detalhes)
-detalhes=dwt_matrix(detalhes)
-plot_matrix(detalhes)
+#class(detalhes)
+#dim(detalhes)
 
-class(detalhes)
-dim(detalhes)
+min(detalhes)
+max(detalhes)
 
-hist(detalhes)
+# Extracao de features de textura com a matrix de dependencia de niveis de cinza (GLCM)
+m = glcm(detalhes, angle=0,d=1)
+calc_features(m) #quais features usaremos depende da rede neural

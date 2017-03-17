@@ -1,6 +1,6 @@
 library(oro.dicom)
 
-dir = "/media/cicconella/8AA6013CA6012A71/Documents and Settings/Nina/Google Drive/MaChiron/Exames/HCC Lirads 4/"
+dir = "/media/cicconella/8AA6013CA6012A71/Documents and Settings/Nina/Google Drive/MaChiron/Exames/HNF grande/"
 
 nomes = read.table(paste(dir,"nome",sep=""))
 dim(nomes)
@@ -17,7 +17,17 @@ fase = rep(NA, length(nomes))
 for(i in 1:length(nomes)){
   fname <- paste(dir, "DICOM/", nomes[i], sep="")
   
+  # if(i==809){
+  #   paciente[i] = NA
+  #   tipo[i] = NA
+  #   estudo[i] = NA
+  #   slice[i] = NA
+  #   fase[i] = NA
+  #   next
+  # }
+  
   abdo <- readDICOMFile(fname)
+  
   abdo$hdr[,c(3,6)]
 
   a = which(abdo$hdr[,3]== "PatientID")
@@ -39,8 +49,11 @@ for(i in 1:length(nomes)){
    }
   
   a = which(abdo$hdr[,3]== "SeriesDescription")
-  fase[i] = (abdo$hdr[a,6])
-  
+  if(length(a)!=0){
+    fase[i] = (abdo$hdr[a,6])
+  }else{
+    fase[i] = NA
+  }
   
 #   png(paste(dir,"Imagens/",nomes[i], ".png", sep=""))
 #   image(t(abdo$img), col=grey(0:64/64), axes=FALSE, xlab="", ylab="")

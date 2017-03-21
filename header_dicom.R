@@ -1,12 +1,14 @@
 library(oro.dicom)
 
-dir = "/media/cicconella/8AA6013CA6012A71/Documents and Settings/Nina/Google Drive/MaChiron/Exames/HNF grande/"
+dir = "/media/cicconella/8AA6013CA6012A71/Documents and Settings/Nina/Google Drive/MaChiron/Exames/Cisto/"
 
 nomes = read.table(paste(dir,"nome",sep=""))
 dim(nomes)
-nomes = nomes[-dim(nomes)[1],1]
-nomes= as.character(nomes)
+#nomes = nomes[-dim(nomes)[1],1]
+nomes = as.character(nomes[,1])
 head(nomes)
+#nomes[807:818]
+#nomes =  nomes[-c(807:818)]
 
 paciente = rep(NA, length(nomes))
 tipo = rep(NA, length(nomes))
@@ -55,9 +57,9 @@ for(i in 1:length(nomes)){
     fase[i] = NA
   }
   
-#   png(paste(dir,"Imagens/",nomes[i], ".png", sep=""))
-#   image(t(abdo$img), col=grey(0:64/64), axes=FALSE, xlab="", ylab="")
-#   dev.off()
+   png(paste(dir,"Imagens/",nomes[i], ".png", sep=""))
+   image(t(abdo$img), col=grey(0:64/64), axes=FALSE, xlab="", ylab="")
+   dev.off()
   
   print(i)
   

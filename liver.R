@@ -14,7 +14,8 @@ library(EBImage) # Identificar Maior Componente de Imagem Binaria
 
 # Plotar Imagens
 plot_image <- function(m,nome){
-  image(t(m), col=grey(0:64/64), axes=FALSE, xlab=nome, ylab="")
+  max_escala = 1#min(max(m)/255,1)
+  image(t(m), col=grey(0:64*(max_escala)/64), axes=FALSE, xlab=nome, ylab="")
 }
 
 plot_matrix <- function(m, nome){
@@ -79,19 +80,38 @@ maior_componente <- function(a) {
   return(list(matrix=m, max=tam))
 }
 
+#### Calcula matriz onde cada elemento e a media dos elementos vizinhos na original
+matriz_media = function(m){
+  mr = m
+  dx = dim(m)[1]
+  dy = dim(m)[2]
+  for(i in 1:dx){
+    for (j in 1:dy){
+      v = c(m[i,j])
+      if (i>1) v= c(v,m[i-1,j])
+      if (i<dx) v= c(v,m[i+1,j])
+      if (j>1) v= c(v,m[i,j-1])
+      if (j<dy) v= c(v,m[i,j+1])
+      mr[i,j] = mean(v)
+    }
+  }
+  return (mr)
+}
+
+
 ##### Nossos dados ###### 
 
 ### Para um arquivo ###
 
 #dir = "/media/cicconella/8AA6013CA6012A71/Users/Nina/Documents/Machiron/52490000/52490000/"
 
-#dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 5/"
+dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 5/"
 #dir = "/Users/ludykong/MaChiron/Data/Hemangioma grande lobo esquerdo/"
-dir = "/Users/ludykong/MaChiron/Data/52490000/"
+#dir = "/Users/ludykong/MaChiron/Data/52490000/"
 
-#filename = "1.2.840.113619.2.327.3.1091195278.42.1381225064.881.121.dcm"
+filename = "1.2.840.113619.2.327.3.1091195278.42.1381225064.881.121.dcm"
 #filename = "1.2.840.113704.1.111.5852.1422287786.17764.dcm"
-filename = 65643294
+#filename = 65643294
 
 fname <-  paste(dir, filename, sep="")
 
@@ -102,33 +122,31 @@ abdo <- readDICOMFile(fname)
 
 # abdo$hdr
 # which(abdo$hdr[,3]=="SliceLocation")
-# abdo$hdr[abdo$hdr$name == "StudyDescription",]
-# abdo$hdr[abdo$hdr$name == "SeriesDescription",] #30
-# abdo$hdr[abdo$hdr$name == "ImageType",] #10 ORIGINAL PRIMARY AXIAL
+abdo$hdr[abdo$hdr$name == "StudyDescription",]
+abdo$hdr[abdo$hdr$name == "SeriesDescription",]
+abdo$hdr[abdo$hdr$name == "ImageType",] #10 ORIGINAL PRIMARY AXIAL
 # abdo$hdr[abdo$hdr$name == "SliceThickness",] #64
 # abdo$hdr[abdo$hdr$name == "SliceLocation",] #125
 # abdo$hdr[abdo$hdr$name == "PixelSpacing",] #158 0.703125 0.703125
-
 
 plot_image(abdo$img, "Original")
 
 a = abdo$img
 a = as.array(a)
-hist(a[a>100], nc=100000)
+hist(a[a>1], nc=1000,main = "Histograma Original")
 
 ##### Normalizar #####
-
-lo = 750
-hi = 1250
-
-for(i in 1:dim(a)[1]){
-  for(j in 1:dim(a)[2]){
-   a[i,j] = normaliza(a[i,j], lo, hi) 
-  }
-}
-plot_image(normalizada, "Normalizada")
+lo = 1000
+hi = 1200
 
 normalizada = a
+for(i in 1:dim(a)[1]){
+  for(j in 1:dim(a)[2]){
+    normalizada[i,j] = normaliza(a[i,j], lo, hi) 
+  }
+}
+
+plot_image(normalizada, "Normalizada")
 
 ##### Recorte da janela com o figado #####  
 dim(normalizada)
@@ -146,7 +164,6 @@ janela = limpa_preto(janela)
 plot_image(janela, "Janela")
 
 ##### Filtro anisotropico #####
-
 filtrada = as.cimg(janela)
 tmp = proc.time() 
 filtrada = blur_anisotropic(filtrada,ampl=1e4,sharp=1) 
@@ -156,36 +173,45 @@ filtrada = as.matrix(filtrada)
 plot_image(filtrada, "Filtrada")
 
 ##### Analise do histograma #####
-
-hist(filtrada, nc=100)
-hist(filtrada[-c(which(filtrada<100), which(filtrada>225))], nc = 1000)
+lim_inf = 50
+lim_sup = 200
+#dp = 35
+length(unique(as.vector(filtrada)))
 filtrada = round(filtrada)
-mod = moda(filtrada[-c(which(filtrada<100), which(filtrada>225))])
-mod
-dp = 25
+h = hist(filtrada,nc = 256)#[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))], nc = 256)
+h = density(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))])
+h$x
+h$y
+
+picos <- h$x[which(diff(sign(diff(h$y )))==-2)]
+vales <- h$x[which(diff(sign(diff(h$y )))==2)]
+
+V1= vales[1]
+V2= picos[2]
+
+limite_y = h$y[which(h$x == V2)]/30
+V3 = h$x[-c(which(h$y > limite_y), which(h$x< mod) )][1]
+c(V1,V2,V3)
+#mod = moda(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))])
 
 ##### Aplicacoes morfologicas #####
-
-
 binaria = filtrada
 
-binaria[binaria>(mod+dp)] = 0
-binaria[binaria<(mod-dp)] = 0
+binaria[binaria>V3] = 0
+binaria[binaria<V1] = 0
 binaria[binaria!=0] = 1
-
 
 plot_image(binaria, "Binaria Pre Morfo")
 
-kernel <- shapeKernel(c(13,13), type="disc")
+kernel <- shapeKernel(c(5,5), type="disc")
 
-binaria = opening(binaria, kernel)
-binaria = closing(binaria, kernel)
-
+binaria_pos = opening(binaria, kernel)
+binaria_pos = closing(binaria_pos, kernel)
 #tamfig = table(binaria)[ ]
-plot_image(binaria, "Binaria Pos Morfo")
+plot_image(binaria_pos, "Binaria Pos Morfo")
 
-dim(binaria)
-l = maior_componente(binaria)
+dim(binaria_pos)
+l = maior_componente(binaria_pos)
 maior_binaria = l$matrix
 tamanho_figado = l$max
 plot_image(maior_binaria, "Maior componente da Binaria")
@@ -195,15 +221,18 @@ morfo = limpa_preto(morfo)
 plot_image(morfo, "Morfo")
 
 ##### FCM #####
-# linha = as.vector(morfo)
-# #hist(morfo[morfo>100], nc=100)
-# 
-# resultado = cmeans(linha, iter.max = 150, centers=c(0, mod/2, mod), dist = "manhattan", m = 1.5)
-# #(resultado$centers)
-# #dim(resultado$membership)
-# 
-# cluster = matrix(resultado$cluster, nrow = dim(morfo)[1])
-# plot_image(cluster,"Clusters")
+#media_morfo = matriz_media(morfo)
+#plot_image(media_morfo, "Media Morfo")
+
+#linha = as.vector(media_morfo)
+#hist(morfo[morfo>100], nc=200)
+
+#resultado = cmeans(linha, iter.max = 150, centers=c(0, mod-dp, mod), dist = "manhattan", m = 1.5)
+#(resultado$centers)
+#dim(resultado$membership)
+
+#cluster = matrix(resultado$cluster, nrow = dim(morfo)[1])
+#plot_image(cluster,"Clusters")
 # 
 # kernel = shapeKernel(c(5,5), type="disc")
 # 

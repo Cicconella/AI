@@ -12,10 +12,15 @@ library(wavelets) # Realizar transformacao DWT
 library(radiomics) # Gerar a matrix GLCM e extrair features
 library(EBImage) # Identificar Maior Componente de Imagem Binaria
 
+home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
+
 # Plotar Imagens
 plot_image <- function(m,nome){
   max_escala = 1#min(max(m)/255,1)
   image(t(m), col=grey(0:64*(max_escala)/64), axes=FALSE, xlab=nome, ylab="")
+  png(paste(home,"/plots/",nome,".png",sep=""),width = 512,height = 512)
+  image(t(m), col=grey(0:64*(max_escala)/64), axes=FALSE, xlab=nome, ylab="")
+  dev.off()
 }
 
 plot_matrix <- function(m, nome){
@@ -105,13 +110,13 @@ matriz_media = function(m){
 
 #dir = "/media/cicconella/8AA6013CA6012A71/Users/Nina/Documents/Machiron/52490000/52490000/"
 
-dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 5/"
+#dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 5/"
 #dir = "/Users/ludykong/MaChiron/Data/Hemangioma grande lobo esquerdo/"
-#dir = "/Users/ludykong/MaChiron/Data/52490000/"
+dir = "/Users/ludykong/MaChiron/Data/52490000/"
 
-filename = "1.2.840.113619.2.327.3.1091195278.42.1381225064.881.121.dcm"
+#filename = "1.2.840.113619.2.327.3.1091195278.42.1381225064.881.121.dcm"
 #filename = "1.2.840.113704.1.111.5852.1422287786.17764.dcm"
-#filename = 65643294
+filename = 65643294
 
 fname <-  paste(dir, filename, sep="")
 
@@ -133,10 +138,10 @@ plot_image(abdo$img, "Original")
 
 a = abdo$img
 a = as.array(a)
-hist(a[a>1], nc=1000,main = "Histograma Original")
+hist(a[a>10], nc=1000,main = "Histograma Original")
 
 ##### Normalizar #####
-lo = 1000
+lo = 800
 hi = 1200
 
 normalizada = a
@@ -147,6 +152,7 @@ for(i in 1:dim(a)[1]){
 }
 
 plot_image(normalizada, "Normalizada")
+hist(normalizada[normalizada>10], nc=1000,main = "Histograma Normalizada")
 
 ##### Recorte da janela com o figado #####  
 dim(normalizada)
@@ -178,19 +184,22 @@ lim_sup = 200
 #dp = 35
 length(unique(as.vector(filtrada)))
 filtrada = round(filtrada)
-h = hist(filtrada,nc = 256)#[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))], nc = 256)
+hist(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))],nc = 256)#[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))], nc = 256)
 h = density(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))])
+plot(h)
 h$x
 h$y
 
 picos <- h$x[which(diff(sign(diff(h$y )))==-2)]
 vales <- h$x[which(diff(sign(diff(h$y )))==2)]
 
-V1= vales[1]
-V2= picos[2]
+np = length(picos)
+np
+V1= vales[np-1]
+V2= picos[np]
 
 limite_y = h$y[which(h$x == V2)]/30
-V3 = h$x[-c(which(h$y > limite_y), which(h$x< mod) )][1]
+V3 = h$x[-c(which(h$y > limite_y), which(h$x< V2) )][1]
 c(V1,V2,V3)
 #mod = moda(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))])
 
@@ -204,20 +213,33 @@ binaria[binaria!=0] = 1
 plot_image(binaria, "Binaria Pre Morfo")
 
 kernel <- shapeKernel(c(5,5), type="disc")
-
 binaria_pos = opening(binaria, kernel)
 binaria_pos = closing(binaria_pos, kernel)
-#tamfig = table(binaria)[ ]
+
+#binaria_pos = binaria
 plot_image(binaria_pos, "Binaria Pos Morfo")
 
+###### Encontrar maior Componente da Binaria ######
 dim(binaria_pos)
 l = maior_componente(binaria_pos)
 maior_binaria = l$matrix
 tamanho_figado = l$max
 plot_image(maior_binaria, "Maior componente da Binaria")
 
-morfo = maior_binaria * filtrada
-morfo = limpa_preto(morfo)
+masc = fillHull(maior_binaria)
+plot_image(masc, "Masc")
+
+morfo = masc * filtrada
+#morfo = limpa_preto(morfo)
+plot_image(morfo, "Morfo pre morfo")
+
+kernel <- shapeKernel(c(7,7), type="disc")
+masc = opening(masc, kernel)
+masc = closing(masc, kernel)
+plot_image(masc, "Masc pos morfo")
+
+morfo = masc * filtrada
+#morfo = limpa_preto(morfo)
 plot_image(morfo, "Morfo")
 
 ##### FCM #####

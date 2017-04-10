@@ -264,3 +264,6 @@ plot_matrix(dwt_detalhes, "Detalhes")
 # Extracao de features de textura com a matrix de dependencia de niveis de cinza (GLCM)
 m = glcm(detalhes, angle=0,d=1)
 calc_features(m) #quais features usaremos depende da rede neural
+
+
+TESTE

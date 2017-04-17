@@ -127,17 +127,6 @@ fname <-  paste(dir, filename, sep="")
 abdo <- readDICOMFile(fname)
 #names(abdo)
 
-# Dados Importantes do Header
-
-# abdo$hdr
-# which(abdo$hdr[,3]=="SliceLocation")
-abdo$hdr[abdo$hdr$name == "StudyDescription",]
-abdo$hdr[abdo$hdr$name == "SeriesDescription",]
-abdo$hdr[abdo$hdr$name == "ImageType",] #10 ORIGINAL PRIMARY AXIAL
-# abdo$hdr[abdo$hdr$name == "SliceThickness",] #64
-# abdo$hdr[abdo$hdr$name == "SliceLocation",] #125
-# abdo$hdr[abdo$hdr$name == "PixelSpacing",] #158 0.703125 0.703125
-
 plot_image(abdo$img, "Original")
 
 a = abdo$img

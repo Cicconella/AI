@@ -1,18 +1,19 @@
+##### Bibliotecas #####
 
-install.packages("oro.dicom")
+#install.packages("oro.dicom")
 library(oro.dicom)
 
 ### Script para adicionar um novo exame ao banco de dados
 
 ### Dado que getwd() = "/home/cicconella/AI", meu banco vai ficar aqui:
 
-database = paste(getwd(), "/../GugolDraive/MaChiron/Exames", sep="")
+database = paste(getwd(), "/../../Google Drive/MaChiron/Exames/", sep="")
 
 list.files(database)
 
 exame = "Downloads"
 
-path = paste0(database,"/", exame)
+path = paste0(database, exame)
 
 if(dir.exists(path)){
   print(paste("O diretorio", path,  "ja existe."))

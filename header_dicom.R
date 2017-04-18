@@ -11,7 +11,7 @@ database = paste(getwd(), "/../../Google Drive/MaChiron/Exames/", sep="")
 
 list.files(database)
 
-exame = "Downloads"
+exame = "Adenomas com washout"
 
 path = paste0(database, exame)
 
@@ -27,10 +27,11 @@ if(dir.exists(path)){
 }
 
 # Diretorio de uma pasta de exame contendo muitos DICOMs
-dir = paste(getwd(), "/../", exame,"/DICOM/", sep="")
+dir = paste(getwd(), "/../../Google Drive/MaChiron/Exames/", exame," - Original/DICOM/", sep="")
 
 #Lista os DICOM
 nomes = list.files(dir)
+nomes
 
 #nomes = read.table(paste(dir,"nome",sep=""))
 #dim(nomes)
@@ -91,10 +92,10 @@ write.table(rbind(c("PAX: ", paciente), c("Tipo de Exame: ", estudo),c("Espessur
             row.names = F, quote = F, col.names = F)
 write.table(cbind(nomes, tipo, fase, slice), paste(path,"/infosImagem", sep=""), row.names = F)
 
-sc = grep("SC", fase)
-art = grep("ART", fase)
-eq = grep("EX", fase)
-pont = seq(1,length(fase))[-c(sc, art,eq)]
+# sc = grep("SC", fase)
+# art = grep("ART", fase)
+# eq = grep("EX", fase)
+# pont = seq(1,length(fase))[-c(sc, art,eq)]
 
 
 nfases  = unique(fase)

@@ -3,31 +3,9 @@
 #install.packages("oro.dicom")
 #biocLite("EBImage")
 
-source("https://bioconductor.org/biocLite.R")
-library(oro.dicom) # Leitura do arquivo DICOM
-library(imager) # Blur da imagem
-library(mmand) # Operacoes morfologicas (abertura e fechamento) 
-library(e1071) #Clusterizacao FCM
-library(wavelets) # Realizar transformacao DWT
-library(radiomics) # Gerar a matrix GLCM e extrair features
-library(EBImage) # Identificar Maior Componente de Imagem Binaria
+source("library.R")
 
 home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
-
-# Plotar Imagens
-plot_image <- function(m,nome){
-  max_escala = 1#min(max(m)/255,1)
-  image(t(m), col=grey(0:64*(max_escala)/64), axes=FALSE, xlab=nome, ylab="")
-  png(paste(home,"/plots/",nome,".png",sep=""),width = 512,height = 512)
-  image(t(m), col=grey(0:64*(max_escala)/64), axes=FALSE, xlab=nome, ylab="")
-  dev.off()
-}
-
-plot_matrix <- function(m, nome){
-  dx = dim(m)[1]
-  dy = dim(m)[2]
-  plot_image(m[nrow(m):1,],nome)  
-}
 
 # Transformacao Wavelet
 dwt_rows <- function(m){
@@ -69,12 +47,6 @@ moda <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-limpa_preto <- function(m){
-  m = m[-which((apply(m, 1, sum))==0),]
-  m = m[,-which((apply(m, 2, sum))==0)]
-  return(m)
-}
-
 # Limpeza
 maior_componente <- function(a) {
   m = bwlabel(a)  
@@ -112,11 +84,11 @@ matriz_media = function(m){
 
 #dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 5/"
 #dir = "/Users/ludykong/MaChiron/Data/Hemangioma grande lobo esquerdo/"
-#dir = "/Users/ludykong/MaChiron/Data/52490000/"
+dir = "/Users/ludykong/MaChiron/Data/52490000/"
 
 dir = "/home/cicconella/"
 
-a = format(1, width = 2, zero.print = T)
+# a = format(1, width = 2, zero.print = T)
 
 #filename = "1.2.840.113619.2.327.3.1091195278.42.1381225064.881.121.dcm"
 #filename = "1.2.840.113704.1.111.5852.1422287786.17764.dcm"
@@ -125,8 +97,9 @@ filename = 65643294
 fname <-  paste(dir, filename, sep="")
 
 abdo <- readDICOMFile(fname)
-#names(abdo)
-
+dim(abdo$hdr)
+print(abdo$hdr)
+write.table(abdo$hdr,"header")
 plot_image(abdo$img, "Original")
 
 a = abdo$img

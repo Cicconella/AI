@@ -18,22 +18,27 @@ normlinha <- function(vetor){
 normset <- function(dados){
   return(apply(dados, 2, normlinha))
 }
-  
+
+### Features  
+feat = c("glcm_mean","glcm_variance","glcm_energy","glcm_contrast","glcm_entropy","glcm_homogeneity1","glcm_correlation","glcm_idmn")
+length(feat)
+
 healthybase = paste(getwd(), "/testimgs/saudavel", sep="")
 tribase = paste(getwd(), "/testimgs/triangulo", sep="")
-testbase = paste(getwd(), "/testimgs/testes", sep="")
+#testbase = paste(getwd(), "/testimgs/testes", sep="")
 healthyfiles = list.files(healthybase)
 trifiles = list.files(tribase)
-testfiles = list.files(testbase)
+#testfiles = list.files(testbase)
+
+#a = readPNG(paste(healthybase,"s1.png",sep="/"))[,,1]
+#image(a, col=grey(0:64*(max(a))/64), axes=FALSE, ylab="")  
 
 ### Gera features saudaveis
 featmatrix = c()
 for (arq in healthyfiles){
   a = readPNG(paste(healthybase,arq,sep="/"))[,,1]
-  #image(a, col=grey(0:64*(max(a))/64), axes=FALSE, ylab="")  
   m = glcm(a, angle=0,d=1)
   f = calc_features(m) #quais features usaremos depende da rede neural
-  f=f[1:5]
   featmatrix = rbind(featmatrix,f)
 }
 
@@ -41,39 +46,55 @@ for (arq in healthyfiles){
 trimatrix = c()
 for (arq in trifiles){
   a = readPNG(paste(tribase,arq,sep="/"))[,,1]
-  #image(a, col=grey(0:64*(max(a))/64), axes=FALSE, ylab="")  
   m = glcm(a, angle=0,d=1)
   f = calc_features(m) #quais features usaremos depende da rede neural
-  f=f[1:5]
   trimatrix = rbind(trimatrix,f)
 }
+
 ### Gera features test
-testmatrix = c()
-for (arq in testfiles){
-  a = readPNG(paste(testbase,arq,sep="/"))[,,1]
-  #image(a, col=grey(0:64*(max(a))/64), axes=FALSE, ylab="")  
-  m = glcm(a, angle=0,d=1)
-  f = calc_features(m) #quais features usaremos depende da rede neural
-  f=f[1:5]
-  testmatrix = rbind(testmatrix,f)
-}
-testmatrix
+# testmatrix = c()
+# for (arq in testfiles){
+#   a = readPNG(paste(testbase,arq,sep="/"))[,,1]
+#   m = glcm(a, angle=0,d=1)
+#   f = calc_features(m) #quais features usaremos depende da rede neural
+#   testmatrix = rbind(testmatrix,f)
+# }
+
 summary(featmatrix)
 summary(trimatrix)
-summary(testmatrix)
+#summary(testmatrix)
 
-plot(c(featmatrix[,1],trimatrix[,1]),c(featmatrix[,2],trimatrix[,2]),col = c(rep("blue",6),rep("red",6)),pch = 16)
-
+#plot(c(featmatrix[,1],trimatrix[,1]),c(featmatrix[,2],trimatrix[,2]),col = c(rep("blue",6),rep("red",6)),pch = 16)
+h_n = dim(featmatrix)[1]
+tri_n = dim(trimatrix)[1]
 d = rbind(featmatrix,trimatrix)
-d = cbind(c(rep(0,6),rep(1,6)),d)
-colnames(d) = c("class","v1","v2","v3","v4","v5")
-
 nd = normset(d)
-net.d = neuralnet(class~v1+v2+v3+v4+v5, nd, rep=5, linear.output=FALSE,threshold = 0.001)
+nd_h = nd[1:h_n,]
+nd_t = nd[ (h_n+1):(h_n+tri_n),]
+
+trainp = 0.75
+h_train = floor(h_n*trainp)
+train = sample(1:h_n, h_train)
+test = (1:h_n)[-train]
+healthytrain = nd_h[train,]
+healthytest =  nd_h[test,]
+  
+tri_n = dim(trimatrix)[1]
+tri_train = floor(tri_n*trainp)
+train = sample(1:tri_n, tri_train)
+test = (1:tri_n)[-train]
+tritrain = nd_t[train,]
+tritest =  nd_t[test,]
+
+train = cbind(c(rep(0,h_train),rep(1,tri_train)),rbind(healthytrain,tritrain) )
+colnames(train)[1] = c("class")
+x = paste(colnames(train)[-1],collapse="+")
+net.d = neuralnet(paste('class ~ ' ,x),train, rep=5, linear.output=FALSE,threshold = 0.001)
 plot(net.d,rep="best")
-compute(net.d,nd[,2:6])
+compute(net.d,train[,-1])
 
-
+test = rbind(healthytest,tritest)
+compute(net.d,test)
 
 
 

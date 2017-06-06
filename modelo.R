@@ -1,5 +1,5 @@
-install.packages("pnn")
-install.packages("neuralnet")
+#install.packages("pnn")
+#install.packages("neuralnet")
 
 library(png)
 library(imager)
@@ -20,7 +20,7 @@ normset <- function(dados){
 }
 
 ### Features  
-feat = c("glcm_mean","glcm_variance","glcm_energy","glcm_contrast","glcm_entropy","glcm_homogeneity1","glcm_correlation","glcm_idmn")
+feat = c("glcm_mean","glcm_variance","glcm_energy","glcm_contrast","glcm_entropy","glcm_homogeneity1","glcm_correlation","glcm_IDMN")
 length(feat)
 
 healthybase = paste(getwd(), "/testimgs/saudavel", sep="")
@@ -39,6 +39,7 @@ for (arq in healthyfiles){
   a = readPNG(paste(healthybase,arq,sep="/"))[,,1]
   m = glcm(a, angle=0,d=1)
   f = calc_features(m) #quais features usaremos depende da rede neural
+  f = f[names(f)%in% feat]
   featmatrix = rbind(featmatrix,f)
 }
 
@@ -48,6 +49,7 @@ for (arq in trifiles){
   a = readPNG(paste(tribase,arq,sep="/"))[,,1]
   m = glcm(a, angle=0,d=1)
   f = calc_features(m) #quais features usaremos depende da rede neural
+  f = f[names(f)%in% feat]
   trimatrix = rbind(trimatrix,f)
 }
 
@@ -62,6 +64,8 @@ for (arq in trifiles){
 
 summary(featmatrix)
 summary(trimatrix)
+apply(featmatrix, 2, mean)
+apply(trimatrix, 2, mean)
 #summary(testmatrix)
 
 #plot(c(featmatrix[,1],trimatrix[,1]),c(featmatrix[,2],trimatrix[,2]),col = c(rep("blue",6),rep("red",6)),pch = 16)
@@ -74,17 +78,17 @@ nd_t = nd[ (h_n+1):(h_n+tri_n),]
 
 trainp = 0.75
 h_train = floor(h_n*trainp)
-train = sample(1:h_n, h_train)
-test = (1:h_n)[-train]
-healthytrain = nd_h[train,]
-healthytest =  nd_h[test,]
+train_h_set = sample(1:h_n, h_train)
+test_h_set = (1:h_n)[-train_h_set]
+healthytrain = nd_h[train_h_set,]
+healthytest =  nd_h[test_h_set,]
   
 tri_n = dim(trimatrix)[1]
 tri_train = floor(tri_n*trainp)
-train = sample(1:tri_n, tri_train)
-test = (1:tri_n)[-train]
-tritrain = nd_t[train,]
-tritest =  nd_t[test,]
+train_t_set = sample(1:tri_n, tri_train)
+test_t_set = (1:tri_n)[-train_t_set]
+tritrain = nd_t[train_t_set,]
+tritest =  nd_t[test_t_set,]
 
 train = cbind(c(rep(0,h_train),rep(1,tri_train)),rbind(healthytrain,tritrain) )
 colnames(train)[1] = c("class")

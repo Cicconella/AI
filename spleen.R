@@ -1,11 +1,19 @@
 source("library.R")
+
+home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
 dir = "/Users/ludykong/MaChiron/Data/52490000/"
-filename = 65643294
+dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 4/"
+#filename = 65643690#65643294
+#filename = 65643294
+#Lirads4 
+filename = "1.2.840.113619.2.327.3.1091195278.193.1456136545.506.24.dcm"
+fname <-  paste(dir, filename, sep="")
+
 
 dicom <- readDICOMFile(fname)
-plot_image(dicom$img, "Original 2")
+plot_image(dicom$img, "Original")
 ori = dicom$img
-
+hdr = dicom$hdr
 ##### Normalizar #####
 lo = 800
 hi = 1200
@@ -23,10 +31,10 @@ hist(normalizada[normalizada>10], nc=1000,main = "Histograma Normalizada")
 ##### Recorte da janela com o baco #####  
 dim(normalizada)
 npixels = dim(normalizada)[1]
-min_x = floor(npixels*0.5)
-max_x = npixels
-min_y = floor(npixels*0.3)+1
-max_y = floor(npixels*0.6)+1
+min_x = floor(npixels*0.6)
+max_x = floor(0.8*npixels)
+min_y = floor(npixels*0.35)+1
+max_y = floor(npixels*0.55)+1
 
 janela = normalizada
 janela = janela[c(min_y:max_y),c(min_x:max_x)]
@@ -68,25 +76,24 @@ V2= picos[np-1]
 limite_y = h$y[which(h$x == V2)]/10
 V3 = h$x[-c(which(h$y > limite_y), which(h$x< V2) )][1]
 c(V1,V2,V3)
+#V1= 125
+#V3= 200
 #mod = moda(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))])
 
-##### Aplicacoes morfologicas #####
 binaria = filtrada
-
 binaria[binaria>V3] = 0
 binaria[binaria<V1] = 0
 binaria[binaria!=0] = 1
 
 plot_image(binaria, "Binaria Pre Morfo")
+
+##### Aplicacoes morfologicas #####
 kernel <- shapeKernel(c(5,5), type="disc")
 binaria_pos = opening(binaria, kernel)
 binaria_pos = closing(binaria_pos, kernel)
-
-#binaria_pos = binaria
 plot_image(binaria_pos, "Binaria Pos Morfo")
 
 ###### Encontrar maior Componente da Binaria ######
-dim(binaria_pos)
 l = maior_componente(binaria_pos)
 maior_binaria = l$matrix
 tamanho_baco = l$max
@@ -94,23 +101,23 @@ plot_image(maior_binaria, "Maior componente da Binaria")
 print(paste("Tamanho do Baco:",tamanho_baco))
 
 masc = fillHull(maior_binaria)
-plot_image(masc, "Masc")
+plot_image(masc, "Maior componente Preenchido")
 
 morfo = masc * filtrada
 #morfo = limpa_preto(morfo)
-plot_image(morfo, "Morfo pre morfo")
+plot_image(morfo, "Mascara pre morfo")
 
 kernel <- shapeKernel(c(7,7), type="disc")
 masc = opening(masc, kernel)
 masc = closing(masc, kernel)
-plot_image(masc, "Masc pos morfo")
+plot_image(masc, "Mascara pos morfo")
 
 morfo = masc * filtrada
 #morfo = limpa_preto(morfo)
 plot_image(morfo, "Morfo")
 
-a = which(abdo$hdr[,3]== "PixelSpacing")
-pixelSpacing = abdo$hdr[a,6]
+a = which(hdr[,3]== "PixelSpacing")
+pixelSpacing = hdr[a,6]
 b = unlist(strsplit(pixelSpacing, split = " "))
 pixel_x = b[1]
 pixel_y = b[2]
@@ -118,4 +125,3 @@ pixel_y = b[2]
 area_baco = tamanho_baco*as.numeric(pixel_x)*as.numeric(pixel_y)
 tamanho_baco
 area_baco
-512*512

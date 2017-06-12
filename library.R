@@ -42,3 +42,32 @@ limpa_preto <- function(m){
   return(m)
 }
 
+# Preprocessamento
+normaliza = function(x, lo, hi){
+  if(x<lo){
+    return(0)
+  } else if(x>hi){
+    return(255)
+  } else{
+    x = (255*(x-lo))/(hi-lo)
+    return(x)
+  }
+}
+
+# Preprocessamento
+moda <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+# Limpeza
+maior_componente <- function(a) {
+  m = bwlabel(a)  
+  tam = max(table(m)[-1])
+  n = which.max(table(m)[-1])
+  m[m!=n]=0
+  m[m==n]=1
+  return(list(matrix=m, max=tam))
+}
+
+

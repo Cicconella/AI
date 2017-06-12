@@ -29,34 +29,6 @@ dwt_matrix = function(m){
   return(m3)
 }
 
-# Preprocessamento
-normaliza = function(x, lo, hi){
-  if(x<lo){
-    return(0)
-  } else if(x>hi){
-    return(255)
-  } else{
-    x = (255*(x-lo))/(hi-lo)
-    return(x)
-  }
-}
-
-# Preprocessamento
-moda <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-
-# Limpeza
-maior_componente <- function(a) {
-  m = bwlabel(a)  
-  tam = max(table(m)[-1])
-  n = which.max(table(m)[-1])
-  m[m!=n]=0
-  m[m==n]=1
-  return(list(matrix=m, max=tam))
-}
-
 #### Calcula matriz onde cada elemento e a media dos elementos vizinhos na original
 matriz_media = function(m){
   mr = m
@@ -86,7 +58,7 @@ matriz_media = function(m){
 #dir = "/Users/ludykong/MaChiron/Data/Hemangioma grande lobo esquerdo/"
 dir = "/Users/ludykong/MaChiron/Data/52490000/"
 
-dir = "/home/cicconella/"
+#dir = "/home/cicconella/"
 
 # a = format(1, width = 2, zero.print = T)
 
@@ -254,4 +226,4 @@ m = glcm(detalhes, angle=0,d=1)
 calc_features(m) #quais features usaremos depende da rede neural
 
 
-TESTE
+#TESTE

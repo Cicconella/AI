@@ -15,7 +15,6 @@ library(wavelets) # Realizar transformacao DWT
 library(radiomics) # Gerar a matrix GLCM e extrair features
 library(EBImage) # Identificar Maior Componente de Imagem Binaria
 
-
 # Plotar Imagens
 plot_image <- function(m,nome){
   max_escala = 1#min(max(m)/255,1)
@@ -70,4 +69,54 @@ maior_componente <- function(a) {
   return(list(matrix=m, max=tam))
 }
 
+## Transformacao Wavelet
+dwt_rows <- function(m){
+  dim_m = dim(m)[1]
+  for (i in 1:dim_m){
+    wt = dwt(as.numeric(m[i,]), n.levels=1, filter = "haar")
+    m[i,] = c(wt@V$V1,wt@W$W1)
+  }
+  return(m)
+}
 
+dwt_matrix = function(m){
+  m = dwt_rows(m)
+  m = t(dwt_rows(t(m)))
+  return(m)
+}
+
+## Transformacao Wavelet Inversa
+idwt_rows <- function(m){
+  dim_m = dim(m)[1]
+  for (i in 1:dim_m){
+    linha = m[i,]
+    wt = dwt(linha, n.levels=1, filter = "haar")
+    wt@V$V1 = as.matrix(linha[1:(dim_m/2)])
+    wt@W$W1 = as.matrix(linha[(dim_m/2+1):dim_m])
+    m[i,] = idwt(wt)
+  }
+  return(m)
+}
+
+idwt_matrix = function(m){
+  m = t(idwt_rows(t(m)))
+  m = idwt_rows(m)
+  return(m)
+}
+
+extrai1Q <- function(m){
+  dim_m = dim(m)[1]
+  for (i in (dim_m/2+1):dim_m){
+    m[i,] = rep(0,dim_m/2)
+    m[,i] = rep(0,dim_m/2)
+  }
+  return(m) 
+}
+
+# testes
+m = matrix(c(4,5,2,1,7,4,2,1,rep(5,8),seq(1,8),7,6,6,5,9,8,2,2,
+             4,5,2,1,7,4,2,1,rep(5,8),seq(1,8),7,6,6,5,9,8,2,2),8,byrow=T)
+m2 = dwt_matrix(m)
+m5 = idwt_matrix(m2)
+m3 = extrai1Q(m2)
+m4 = idwt_matrix(m3)

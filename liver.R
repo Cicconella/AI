@@ -7,28 +7,6 @@ source("library.R")
 
 home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
 
-# Transformacao Wavelet
-dwt_rows <- function(m){
-  dim_m = dim(m)[1]
-  wt=list()
-  for (i in 1:dim_m){
-    wt[[i]] = dwt(as.numeric(m[i,]), n.levels=1, filter = "haar")
-  }
-  m2 = m
-  for (i in 1:dim_m){
-    v = c(wt[[i]]@V$V1,wt[[i]]@W$W1)
-    #print(length(v))
-    m2[i,] = v #c(wt[[i]]@V$V1,wt[[i]]@W$W1)
-  }
-  return(m2)
-}
-
-dwt_matrix = function(m){
-  m2 = dwt_rows(m)
-  m3 = t(dwt_rows(t(m2)))
-  return(m3)
-}
-
 #### Calcula matriz onde cada elemento e a media dos elementos vizinhos na original
 matriz_media = function(m){
   mr = m
@@ -219,8 +197,9 @@ detalhes = detalhes[1:M, 1:M]
 plot_matrix(detalhes, "Janela Detalhes")
 
 dwt_detalhes=dwt_matrix(detalhes)
+dwt1 = dwt_detalhes[1:M/2,1:M/2]
 plot_matrix(dwt_detalhes, "Detalhes")
-
+plot_matrix(dwt1, "Detalhes 1Q")
 # Extracao de features de textura com a matrix de dependencia de niveis de cinza (GLCM)
 m = glcm(detalhes, angle=0,d=1)
 calc_features(m) #quais features usaremos depende da rede neural

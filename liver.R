@@ -87,6 +87,7 @@ plot_image(janela, "Janela")
 
 ##### Filtro anisotropico #####
 filtrada = as.cimg(janela)
+class(filtrada)
 tmp = proc.time() 
 filtrada = blur_anisotropic(filtrada,ampl=1e4,sharp=1) 
 proc.time()-tmp 

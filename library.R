@@ -5,6 +5,9 @@ source("https://bioconductor.org/biocLite.R")
 #install.packages("e1071")
 #install.packages("wavelets")
 #install.packages("radiomics")
+#install.packages("wvtool") #Pacote para a deteccao de bordas canny
+
+
 #biocLite("EBImage")
 
 library(oro.dicom) # Leitura do arquivo DICOM
@@ -14,6 +17,7 @@ library(e1071) #Clusterizacao FCM
 library(wavelets) # Realizar transformacao DWT
 library(radiomics) # Gerar a matrix GLCM e extrair features
 library(EBImage) # Identificar Maior Componente de Imagem Binaria
+library(wvtool) # Canny deteccao de bordas 
 
 # Plotar Imagens
 plot_image <- function(m,nome){
@@ -111,6 +115,22 @@ extrai1Q <- function(m){
     m[,i] = rep(0,dim_m/2)
   }
   return(m) 
+}
+
+# Encontra posicao x,y a partir dos indices de matrix
+desindexa = function(m,n){
+  dx = dim(m)[1]
+  dy = dim(m)[2]
+  x = (n-1)%%dx +1
+  y = floor((n-1)/dx)+1
+  return(rbind(x,y))
+}
+
+# Le o DICOM
+le_dicom = function(dir,filename){
+  fname <-  paste(dir, filename, sep="/")
+  dicom <- readDICOMFile(fname)
+  return(dicom$img)
 }
 
 # testes

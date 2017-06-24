@@ -1,186 +1,227 @@
 source("library.R")
 
-home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
-dir = "/Users/ludykong/MaChiron/Data/52490000/"
-dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 4/"
-#list.files(dir)
-#filename = 65643294
-#Lirads4 
-#filename = "1.2.840.113619.2.327.3.1091195278.193.1456136545.506.24.dcm"
-#fname <-  paste(dir, filename, sep="")
-fname = "/Users/ludykong/GDrive/MaChiron/Exames/Cisto/DICOM/VOLUME ABD SC 1.0  B20f/0006-65662095"
-dicom <- readDICOMFile(fname)
-plot_image(dicom$img, "Original")
-ori = dicom$img
-hdr = dicom$hdr
-
-##### Pre Processamento ######
-display(ori/max(ori))
-bin = ori > otsu(ori,range = c(0,max(ori)))
-display(bin)
-binfill = fillHull(bin)
-display(binfill)
-binmaior = maior_componente(binfill)$matrix
-display(binmaior)
-fabd = ori*binmaior
-display(fabd/max(fabd))
-plot_image(fabd, "PreProc")
-#se quiser pode usar filtro gaussiano y = gblur(x, sigma=1)
-
-##### Normalizar #####
-hist(fabd[fabd>1],nc=1000)
-h = density(fabd[fabd>100])
-plot(h)
-#+1 para corrigir o deslocamento do diff
-significativo = (h$y[-c(1,2)]>1e-4)
-maximoLocal = diff(sign(diff(h$y) ) )==-2
-picos = h$x[ (which(significativo & maximoLocal) )+1 ] 
-p1 = picos[1]
-p2 = picos[2]
-
-#### Encontrar intervalo de valores significativos #
-i1 = h$x[which(diff(significativo)==1)]
-i2 = h$x[which(diff(significativo)==-1)]
-
-#Hfpre = table(fabd)[-1]
-#f1 = as.numeric(names(which(Hfpre == max(Hfpre))))
-#Hfpre[names(Hfpre) == f1]
-#Hfpre2 = table(fabd[fabd>f1])
-#f2 = as.numeric(names(which(Hfpre2 == max(Hfpre2))))
-#Hfpre2[names(Hfpre2) == f2]
-lo = i1
-hi = i2
-normalizada = fabd
-for(i in 1:dim(fabd)[1]){
-  for(j in 1:dim(fabd)[2]){
-    normalizada[i,j] = normaliza(fabd[i,j], lo, hi) 
+##### Normaliza e pre processamento ######
+pre_normaliza = function(m){
+  bin = m > otsu(m,range = c(0,max(m)))
+  binfill = fillHull(bin)
+  binmaior = maior_componente(binfill)$matrix
+  fabd = m*binmaior
+  
+  h = density(fabd[fabd>100])
+  significativo = (h$y[-c(1,2)]>1e-4)
+  
+  i1 = h$x[which(diff(significativo)==1)]
+  i2 = h$x[which(diff(significativo)==-1)]
+  lo = i1
+  hi = i2
+  normalizada = fabd
+  for(i in 1:dim(fabd)[1]){
+    for(j in 1:dim(fabd)[2]){
+      normalizada[i,j] = normaliza(fabd[i,j], lo, hi) 
+    }
   }
+  return(normalizada)
 }
-display(normalizada/max(normalizada))
-plot_image(normalizada, "Normalizada")
-hist(normalizada[normalizada>1], nc=1000,main = "Histograma Normalizada")
 
-# Reconstroi usando so a aproximada da DWT
-wave = dwt_matrix(normalizada)
-display(wave/max(wave))
-wave = extrai1Q(wave)
-display(wave/max(wave))
-wave2 = idwt_matrix(wave)
-display(wave2/max(wave2))
+#### Encontra ossos e objetos brancos #####
+acha_brancos = function(m){
+  bin = m > otsu(m,range = c(0,max(m)))
+  fB = m*bin
+  
+  muw = mean(fB[which(fB != 0)])
+  sigw = sd(fB[which(fB != 0)])
+  tw = muw + sigw 
+  
+  bin = fB>tw
+  bin = fillHull(bin)
+  kernel <- shapeKernel(c(3,3), type="disc")
+  bin_pos = opening(bin, kernel)
+  bin_pos = closing(bin_pos, kernel)
+  
+  # Remover componentes pequenos da mascara
+  limiteTamanho = 20
+  cc = bwlabel(bin_pos)  
+  
+  rem = as.numeric(names(which(table(cc) < limiteTamanho)))
+  for(i in rem){
+    cc[cc == i] = 0
+  }
+  cc[ cc >1]= 1
+  return (cc)
+}
 
-# Novo otsu
-bin = wave2 > otsu(wave2,range = c(0,max(wave2)))
-fB = wave2*bin
-display(fB/max(fB))
+#### Encontra a janela de interesse #####
+encontraROI = function(m,vert){
+  ## Detectando a ROI
+  l = which(apply(m,1,sum) > 0)
+  comAbd = l[1]
+  fimAbd = l[length(l)]
+  l = which(apply(vert,1,sum) > 0)
+  comVert = l[1]
+  d = comVert - comAbd
+  
+  l = which(apply(m,2,sum) > 0)
+  comAbdv = l[1]
+  fimAbdv = l[length(l)]
+  meioAbdv = round((comAbdv +fimAbdv)/2)
+  #ini_x,fim_x,ini_y fim_y
+  return(c(comVert,(fimAbd-d),meioAbdv,fimAbdv))
+}
 
-muw = mean(fB[which(fB != 0)])
-sigw = sd(fB[which(fB != 0)])
-tw = muw + sigw *2
+#### Remove componentes escuros e pequenos #####
+filtra_componentes = function(ROI, startslice){
+  mur = mean(ROI[ROI>0])
+  sigr = sd(ROI[ROI>0]) 
+  tr = mur + sigr
+  
+  binROI = ROI
+  binROI[binROI < tr] = 0
+  binROI[binROI >= tr] = 1
+  
+  kernel <- shapeKernel(c(3,3), type="disc")
+  binROI = closing(binROI, kernel)
+  binROI = opening(binROI, kernel)
+  binROI = fillHull(binROI)
+  
+  ccROI = bwlabel(binROI)
+  
+  if (startslice){
+    limiteTamanho = 1000
+  }else{
+    limiteTamanho = 200
+  }
+  rem = as.numeric(names(which(table(ccROI) < limiteTamanho)))
+  for(i in rem){
+    ccROI[ccROI == i] = 0
+  }
+  ccROI[ ccROI>1]= 1
+  return (ccROI)
+}
 
-bin = fB>tw
-display(bin)
+#### Calcula centroide das vertebras #####
+calcula_centroides = function(mat){
+  comp = bwlabel(mat)
+  cent = c()
+  for (i in names(table(comp)) ){
+    v = as.numeric(i)
+    m = comp
+    m[m!=v] = 0
+    posicoes = desindexa(m,which(m==v))
+    centrox = mean(posicoes[1,])
+    centroy = mean(posicoes[2,])
+    cent = rbind(cent, c(centrox,centroy) )
+  }
+  cent = cent[-1,]
+  return (cent)
+}
 
-bin = fillHull(bin)
-display(bin)
-ff = fB*bin
-display(ff/max(ff))
+#### Encontra o baco para a primeira fatia ####
+acha_baco1 = function(m, vert){
+  vertcent = calcula_centroides(vert)
+  cent = calcula_centroides(m)
+  
+  ### Encontrar componente q minimiza soma das distancias as vertebras
+  min_d = nrow(vertcent)*(2*nrow(m)^2)
+  min_c = -1
+  for (i in 1:nrow(cent)){
+    d = 0
+    x = cent[i,1]
+    y = cent[i,2]
+    for (j in 1:nrow(vertcent)){
+      xv = vertcent[j,1]
+      yv = vertcent[j,2]
+      d = d+ (x-xv)^2 + (y-yv)^2
+    }
+    if (d < min_d){
+      min_d = d
+      min_c = i
+    }
+  }
+  baco = bwlabel(m)
+  baco[baco!=min_c] = 0
+  baco[baco==min_c] = 1
+  return (baco)
+}
 
+acha_baco = function(mat,baco1){
+  cc = bwlabel(mat)
+  max =0
+  max_c = -1
+  i=3
+  for (i in names(table(cc))[-1]){
+    v = as.numeric(i)
+    m = cc
+    m[m!=v] = 0
+    m[m==v] = 1
+    comp = m * baco1
+    if (length(table(comp))>1){
+      pares = table(comp)[2]
+    }else pares = 0
+    if (pares > max){
+      max = pares
+      max_c = i
+    }
+  }
+  m = cc
+  m[m!=max_c] = 0
+  m[m==max_c] = 1
+  return(m)
+}
 
-##### Recorte da janela com o baco #####  
-dim(normalizada)
-npixels = dim(normalizada)[1]
-min_x = floor(npixels*0.6)
-max_x = floor(0.8*npixels)
-min_y = floor(npixels*0.35)+1
-max_y = floor(npixels*0.55)+1
+#setwd("/Users/ludykong/MaChiron/MaChironGit")
+home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
 
-janela = normalizada
-janela = janela[c(min_y:max_y),c(min_x:max_x)]
-janela = limpa_preto(janela)
-janela
-plot_image(janela, "Janela")
+print("Comecando spleen segmentation!")
 
-##### Filtro anisotropico #####
-filtrada = as.cimg(janela)
-tmp = proc.time() 
-filtrada = blur_anisotropic(filtrada,ampl=1e4,sharp=1) 
-proc.time()-tmp 
+dir = "/Users/ludykong/GDrive/MaChiron/Exames/Cisto/DICOM/VOLUME ABD SC 1.0  B20f"
+print(paste("Pasta:",dir))
 
-filtrada = as.matrix(filtrada)
-plot_image(filtrada, "Filtrada")
+files = list.files(dir)
+if (files[length(files)] == "Icon\r")
+  files = files[-length(files)]
 
-##### Analise do histograma #####
-lim_inf = 10
-lim_sup = 250
-#dp = 35
-length(unique(as.vector(filtrada)))
-filtrada = round(filtrada)
-hist(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))],nc = 256)#[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))], nc = 256)
-h = density(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))])
-plot(h)
-h$x
-h$y
-
-picos <- h$x[which(diff(sign(diff(h$y )))==-2)]
-vales <- h$x[which(diff(sign(diff(h$y )))==2)]
-
-np = length(picos)
-np
-picos
-vales
-V1= vales[np-2]
-V2= picos[np-1]
-
-limite_y = h$y[which(h$x == V2)]/10
-V3 = h$x[-c(which(h$y > limite_y), which(h$x< V2) )][1]
-c(V1,V2,V3)
-#V1= 125
-#V3= 200
-#mod = moda(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))])
-
-binaria = filtrada
-binaria[binaria>V3] = 0
-binaria[binaria<V1] = 0
-binaria[binaria!=0] = 1
-
-plot_image(binaria, "Binaria Pre Morfo")
-
-##### Aplicacoes morfologicas #####
-kernel <- shapeKernel(c(5,5), type="disc")
-binaria_pos = opening(binaria, kernel)
-binaria_pos = closing(binaria_pos, kernel)
-plot_image(binaria_pos, "Binaria Pos Morfo")
-
-###### Encontrar maior Componente da Binaria ######
-l = maior_componente(binaria_pos)
-maior_binaria = l$matrix
-tamanho_baco = l$max
-plot_image(maior_binaria, "Maior componente da Binaria")
-print(paste("Tamanho do Baco:",tamanho_baco))
-
-masc = fillHull(maior_binaria)
-plot_image(masc, "Maior componente Preenchido")
-
-morfo = masc * filtrada
-#morfo = limpa_preto(morfo)
-plot_image(morfo, "Mascara pre morfo")
-
-kernel <- shapeKernel(c(7,7), type="disc")
-masc = opening(masc, kernel)
-masc = closing(masc, kernel)
-plot_image(masc, "Mascara pos morfo")
-
-morfo = masc * filtrada
-#morfo = limpa_preto(morfo)
-plot_image(morfo, "Morfo")
-
+fname <-  paste(dir, files[1], sep="/")
+dicom <- readDICOMFile(fname)
+hdr = dicom$hdr
 a = which(hdr[,3]== "PixelSpacing")
 pixelSpacing = hdr[a,6]
 b = unlist(strsplit(pixelSpacing, split = " "))
 pixel_x = b[1]
 pixel_y = b[2]
+print(paste("pixel_x",pixel_x,"pixel_y",pixel_y))
 
-area_baco = tamanho_baco*as.numeric(pixel_x)*as.numeric(pixel_y)
-tamanho_baco
-area_baco
-?fillHull
+startslice = TRUE
+
+area_bacos = c()
+
+file = "0006-65662095"
+file = files[1]
+for (file in files[10:14]){
+    ori = le_dicom(dir,file)
+    display(ori/max(ori))
+    m = pre_normaliza(ori)
+    vert = acha_brancos(m)
+    m[vert==1]=0  
+    if (startslice){
+      jan = encontraROI(m,vert)
+    }
+    m = m[jan[1]:jan[2],jan[3]:jan[4]]
+    vert = vert[jan[1]:jan[2],jan[3]:jan[4]]
+    m = filtra_componentes(m, startslice)
+
+    if (startslice){
+      baco = acha_baco1(m,vert)
+      baco1 = baco
+      startslice = FALSE
+    } else{
+      baco = acha_baco(m,baco1)
+    }
+    display(baco)
+    tamanho_baco = table(baco)[2]
+    area_baco = tamanho_baco*as.numeric(pixel_x)*as.numeric(pixel_y)
+    area_bacos = c(area_bacos,area_baco)
+}
+
+print(area_bacos)
+
+print("fim :)")

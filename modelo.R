@@ -20,7 +20,6 @@ normset <- function(dados){
 
 ### Features para a rede
 feat = c("glcm_mean","glcm_variance","glcm_energy","glcm_contrast","glcm_entropy","glcm_homogeneity1","glcm_correlation","glcm_IDMN")
-length(feat)
 
 ### Leitura dos arquivos
 healthybase = paste(getwd(), "/testimgs/saudavel", sep="")
@@ -31,12 +30,12 @@ trifiles = list.files(tribase)
 # Para ver os PNGs
 #a = readPNG(paste(healthybase,"s1.png",sep="/"))[,,1]
 #image(a, col=grey(0:64*(max(a))/64), axes=FALSE, ylab="")  
-
+#display(a)
 ### Gera as matrizes de features saudaveis e triangulo
 featmatrix = c()
 for (arq in healthyfiles){
   a = readPNG(paste(healthybase,arq,sep="/"))[,,1]
-  m = glcm(a, angle=0,d=1)
+  m = radiomics::glcm(a,angle=0, d=1)
   f = calc_features(m) #quais features usaremos depende da rede neural
   f = f[names(f)%in% feat]
   featmatrix = rbind(featmatrix,f)
@@ -51,9 +50,8 @@ for (arq in trifiles){
   trimatrix = rbind(trimatrix,f)
 }
 
-apply(featmatrix, 2, mean)
-apply(trimatrix, 2, mean)
-
+#apply(featmatrix, 2, mean)
+#apply(trimatrix, 2, mean)
 #plot(c(featmatrix[,1],trimatrix[,1]),c(featmatrix[,2],trimatrix[,2]),col = c(rep("blue",6),rep("red",6)),pch = 16)
 
 #### Separa treino e test saudavel e tri
@@ -65,7 +63,7 @@ train_h_set = sample(1:h_n, h_train)
 test_h_set = (1:h_n)[-train_h_set]
 healthytrain = featmatrix[train_h_set,]
 healthytest =  featmatrix[test_h_set,]
-  
+
 tri_n = dim(trimatrix)[1]
 tri_train = floor(tri_n*trainp)
 train_t_set = sample(1:tri_n, tri_train)
@@ -95,11 +93,11 @@ for( i in 1:length(feat)){
 train = cbind(c(rep(0,h_train),rep(1,tri_train)), treino)
 colnames(train)[1] = c("class")
 x = paste(colnames(train)[-1],collapse="+")
-net.d = neuralnet(paste('class ~ ' ,x),train, rep=5, linear.output=FALSE,threshold = 0.01,act.fct="tanh")
+net.d = neuralnet(data = train, formula = paste('class ~ ' ,x) , rep=5, hidden=5, linear.output=FALSE, threshold = 0.001,act.fct="tanh")
+min(net.d$result.matrix[1,])
 plot(net.d,rep="best")
-compute(net.d,train[,-1])
+compute(net.d,train[,-1])$net.result
 
 ##### Teste #####
-compute(net.d,teste)
-
-#### FIM ####
+compute(net.d,teste)$net.result
+#### FIM ####     

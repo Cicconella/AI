@@ -1,4 +1,4 @@
-source("https://bioconductor.org/biocLite.R")
+#source("https://bioconductor.org/biocLite.R")
 #install.packages("oro.dicom")
 #install.packages("imager")
 #install.packages("mmand")

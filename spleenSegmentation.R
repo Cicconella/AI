@@ -1,35 +1,5 @@
 source("library.R")
 
-##### Normaliza e pre processamento ######
-pre_normaliza = function(m){
-  #m=ori
-  m[m<0] = 0 #remove negativos
-  bin = m > otsu(m,range = c(0,max(m)))
-  binfill = fillHull(bin)
-  binmaior = maior_componente(binfill)$matrix
-  fabd = m*binmaior
-  #EBImage::display(fabd/max(fabd))
-  
-  h = density(fabd[fabd>500]) #500 corta os pulmoes
-  #plot(h)
-  plot(h, xaxt='n')
-  axis(side=1, at=seq(0,2000, 100), labels=seq(0,2000,100), las=2)
-  
-  significativo = (h$y[-c(1,2)]>2e-4)
-  
-  i1 = h$x[which(diff(significativo)==1)]
-  i2 = h$x[which(diff(significativo)==-1)]
-  lo = min(i1)
-  hi = max(i2)
-  normalizada = fabd
-  for(i in 1:dim(fabd)[1]){
-    for(j in 1:dim(fabd)[2]){
-      normalizada[i,j] = normaliza(fabd[i,j], lo, hi) 
-    }
-  }
-  return(normalizada)
-}
-
 #### Encontra ossos e objetos brancos #####
 acha_brancos = function(m){
   #bin = m > otsu(m,range = c(0,max(m)))
@@ -155,6 +125,7 @@ acha_baco1 = function(m, vert){
   return (baco)
 }
 
+#### Encontra o baco usando o da fatia anterior ####
 acha_baco = function(mat,baco1){
   cc = bwlabel(mat)
   max =0
@@ -179,18 +150,17 @@ acha_baco = function(mat,baco1){
   return(m)
 }
 
-#setwd("/Users/ludykong/MaChiron/MaChironGit")
-home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
 
+#### Analise do tamanho do baco ####
 print("Comecando spleen segmentation!")
 
-dir = "/Users/ludykong/GDrive/MaChiron/Exames/618999/DICOM/ARTERIAL/"
+dir = "/Users/ludykong/GDrive/MaChiron/Exames/1775933/DICOM/ARTERIAL/"
 files = list.files(dir)
 if (files[length(files)] == "Icon\r"){
   files = files[-length(files)]
 }
 
-# Encontrar o pixelSpacing
+#### Encontra Pixel Spacing para essa fase ####
 fname <-  paste(dir, files[1], sep="/")
 dicom <- readDICOMFile(fname)
 hdr = dicom$hdr
@@ -207,10 +177,12 @@ pixel_x = b[1]
 pixel_y = b[2]
 print(paste("pixel_x",pixel_x,"pixel_y",pixel_y))
 
-#Recuperar ordem dos arquivos e fazer janela do baco
+#### Abre arquivos e ordena pelo nome ####
 files = as.numeric(files)
 files = files[order(files,decreasing = T)]
-which(is.na(files))
+if (length(which(is.na(files)))>0){
+  print("Maldicao do DICOM!!!")
+}
 
 if (length(unique(diff(files))) >1 ){
   print("Salto na altura das imagens!")
@@ -218,8 +190,8 @@ if (length(unique(diff(files))) >1 ){
 
 maximo = files[1]
 relativos = maximo - files
-COMECO_BACO = 700
-FIM_BACO = 1500
+COMECO_BACO = 200
+FIM_BACO = 2000
 BACO_BOM = 1000
 
 bacos = relativos[relativos>COMECO_BACO & relativos<FIM_BACO]
@@ -228,47 +200,89 @@ baco1 = bacos[which(abs(bacos - BACO_BOM)==min(abs(bacos - BACO_BOM)) )]
 baco1 = formatC(maximo-baco1, width = 4, format = "d", flag = "0")
 bacos = formatC(maximo-bacos, width = 4, format = "d", flag = "0")
 
-print(paste("N Bacos",length(bacos), "Baco bom:", which(bacos==baco1)))
+baco_bom = which(bacos==baco1)
+print(paste("N Bacos",length(bacos), "Baco bom:", baco_bom))
 
-bacos = c(baco1, bacos[-which(bacos==baco1)] )
-
-startslice = TRUE
-area_bacos = c()
-
-file = bacos[1]
+file = bacos[baco_bom]
+ori = le_dicom(dir,file)
+#   EBImage::display(ori/max(ori))
+m = pre_normaliza(ori)
+#   EBImage::display(m/max(m))
+vert = acha_brancos(m)
+#   EBImage::display(vert/max(vert))
+m[vert==1]=0  
+jan = encontraROI(m,vert)
+m = m[jan[1]:jan[2],jan[3]:jan[4]]
+vert = vert[jan[1]:jan[2],jan[3]:jan[4]]
+bin = filtra_componentes(m, TRUE)
+#   EBImage::display(bin)
+baco1 = acha_baco1(bin,vert)
+EBImage::display(baco1)
+bacoOri = matrix(0,nrow = nrow(ori), ncol = ncol(ori))
+bacoOri[jan[1]:jan[2],jan[3]:jan[4]] = baco1
+EBImage::display(bacoOri)
+#plot_matrix(ori, "Original I")
+#plot_matrix(m, "Normalizada I")
+#plot_matrix(bacoOri, "Baco I")
+tamanho_baco = table(baco1)[2]
+if (is.na(tamanho_baco)) {
+  print("Nao tem baco na startslice!!")
+}
+area_baco= tamanho_baco*as.numeric(pixel_x)*as.numeric(pixel_y)
+area_bacos = c(area_baco)
+imagem3D[[baco_bom]] = ori
+baco_ant = baco1
 i=0
-for (file in bacos){
+for (file in bacos[(baco_bom+1):length(bacos)]){
     i=i+1
     print(paste(i,file))
     ori = le_dicom(dir,file)
-#   EBImage::display(ori/max(ori))
+    #   EBImage::display(ori/max(ori))
     m = pre_normaliza(ori)
-#   EBImage::display(m/max(m))
+    #   EBImage::display(m/max(m))
     vert = acha_brancos(m)
-#   EBImage::display(vert/max(vert))
+    #   EBImage::display(vert/max(vert))
     m[vert==1]=0  
-    if (startslice){
-      jan = encontraROI(m,vert)
-    }
     m = m[jan[1]:jan[2],jan[3]:jan[4]]
     vert = vert[jan[1]:jan[2],jan[3]:jan[4]]
-    bin = filtra_componentes(m, startslice)
-#   EBImage::display(bin)
-    if (startslice){
-      baco = acha_baco1(bin,vert)
-      baco1 = baco
-      startslice = FALSE
-    } else{
-      baco = acha_baco(bin,baco1)
-    }
-    EBImage::display(baco)
+    bin = filtra_componentes(m, FALSE)
+    #   EBImage::display(bin)
+    baco = acha_baco(bin,baco_ant)
+#    EBImage::display(baco)
     tamanho_baco = table(baco)[2]
-    #if (is.na(tamanho_baco)) break
-    area_baco = tamanho_baco*as.numeric(pixel_x)*as.numeric(pixel_y)
-    area_bacos = c(area_bacos,area_baco)
+    if (is.na(tamanho_baco)) break
+    area_baco= tamanho_baco*as.numeric(pixel_x)*as.numeric(pixel_y)
+    area_bacos = c(area_bacos, area_baco)
+    baco_ant = baco    
 }
-length(bacos)
-area_bacos = unname(area_bacos)
-print(area_bacos)
 
+baco_ant = baco1
+i=0
+for (file in bacos[(baco_bom-1):1]){
+  i=i+1
+  print(paste(i,file))
+  ori = le_dicom(dir,file)
+  #   EBImage::display(ori/max(ori))
+  m = pre_normaliza(ori)
+  #   EBImage::display(m/max(m))
+  vert = acha_brancos(m)
+  #   EBImage::display(vert/max(vert))
+  m[vert==1]=0  
+  m = m[jan[1]:jan[2],jan[3]:jan[4]]
+  vert = vert[jan[1]:jan[2],jan[3]:jan[4]]
+  bin = filtra_componentes(m, FALSE)
+  #   EBImage::display(bin)
+  baco = acha_baco(bin,baco_ant)
+#  EBImage::display(baco)
+  tamanho_baco = table(baco)[2]
+  if (is.na(tamanho_baco)) break
+  area_baco= tamanho_baco*as.numeric(pixel_x)*as.numeric(pixel_y)
+  area_bacos = c(area_baco, area_bacos)
+  baco_ant = baco
+}
+
+area_bacos = unname(area_bacos)
+plot(area_bacos)
+vol = sum(area_bacos)*1.5/(1000)
+baco_bom
 print("fim :)")

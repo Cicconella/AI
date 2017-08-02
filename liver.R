@@ -1,5 +1,4 @@
 #### Libraries and functions ####
-
 #install.packages("oro.dicom")
 #biocLite("EBImage")
 
@@ -25,88 +24,67 @@ matriz_media = function(m){
   return (mr)
 }
 
-
 ##### Nossos dados ###### 
-
-### Para um arquivo ###
-
-#dir = "/media/cicconella/8AA6013CA6012A71/Users/Nina/Documents/Machiron/52490000/52490000/"
-
-#dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 5/"
-#dir = "/Users/ludykong/MaChiron/Data/Hemangioma grande lobo esquerdo/"
-dir = "/Users/ludykong/MaChiron/Data/52490000/"
-
-#dir = "/home/cicconella/"
-
-# a = format(1, width = 2, zero.print = T)
-
-#filename = "1.2.840.113619.2.327.3.1091195278.42.1381225064.881.121.dcm"
-#filename = "1.2.840.113704.1.111.5852.1422287786.17764.dcm"
-filename = 65643294
+dir = "/Users/ludykong/GDrive/MaChiron/Exames/1775933/DICOM/ARTERIAL/"
+filename = 12865
+#files = list.files(dir)
+#if (files[length(files)] == "Icon\r"){
+#  files = files[-length(files)]
+#}
+#dir = "/Users/ludykong/MaChiron/Data/52490000/"
 
 fname <-  paste(dir, filename, sep="")
 
 abdo <- readDICOMFile(fname)
-dim(abdo$hdr)
-print(abdo$hdr)
-write.table(abdo$hdr,"header")
-plot_image(abdo$img, "Original")
-
-a = abdo$img
-a = as.array(a)
-hist(a[a>10], nc=1000,main = "Histograma Original")
-
+ori = abdo$img
+#plot_image(ori, "Original")
+EBImage::display(ori/max(ori))
+#hist(ori[ori>10], nc=1000,main = "Histograma Original")
 ##### Normalizar #####
-lo = 800
-hi = 1200
+#lo = 800
+#hi = 1200
+#normalizada = a
+#for(i in 1:nrow(a)){
+#  for(j in 1:ncol(a)){
+#    normalizada[i,j] = normaliza(a[i,j], lo, hi) 
+#  }
+#}
+norm = pre_normaliza(ori)
+EBImage::display(norm/max(norm))
 
-normalizada = a
-for(i in 1:dim(a)[1]){
-  for(j in 1:dim(a)[2]){
-    normalizada[i,j] = normaliza(a[i,j], lo, hi) 
-  }
-}
-
-plot_image(normalizada, "Normalizada")
-hist(normalizada[normalizada>10], nc=1000,main = "Histograma Normalizada")
+#hist(normalizada[normalizada>10], nc=1000,main = "Histograma Normalizada")
 
 ##### Recorte da janela com o figado #####  
-dim(normalizada)
-pikachu = dim(normalizada)[1]
-min_x = floor(pikachu*0.75)+1
-max_x = pikachu
+min_x = floor(nrow(norm)*0.7)+1
+max_x = nrow(norm)
 min_y = 0
-max_y = floor(pikachu*0.25)
+max_y = floor(nrow(norm)*0.25)
 
-janela = normalizada
+janela = norm
 janela = janela[,-c(min_x:max_x)]
 janela = janela[-c(min_y:max_y),]
 janela = limpa_preto(janela)
 
-plot_image(janela, "Janela")
+#plot_image(janela, "Janela")
+EBImage::display(janela/max(janela))
 
 ##### Filtro anisotropico #####
-filtrada = as.cimg(janela)
-class(filtrada)
-tmp = proc.time() 
-filtrada = blur_anisotropic(filtrada,ampl=1e4,sharp=1) 
-proc.time()-tmp 
-
-filtrada = as.matrix(filtrada)
-plot_image(filtrada, "Filtrada")
+#filtrada = as.cimg(janela)
+#tmp = proc.time() 
+#filtrada = blur_anisotropic(filtrada,ampl=1e4,sharp=1) 
+#proc.time()-tmp 
+#filtrada = as.matrix(filtrada)
+#plot_image(filtrada, "Filtrada")
+#EBImage::display(filtrada/max(filtrada))
 
 ##### Analise do histograma #####
 lim_inf = 50
 lim_sup = 200
 #dp = 35
-length(unique(as.vector(filtrada)))
-filtrada = round(filtrada)
-hist(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))],nc = 256)#[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))], nc = 256)
-h = density(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))])
+#norm = round(norm)
+hist(janela[-c(which(janela<lim_inf), which(janela>lim_sup))],nc = 256)#[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))], nc = 256)
+h = density(janela[-c(which(janela<lim_inf), which(janela>lim_sup))])
 plot(h)
-h$x
-h$y
-
 picos <- h$x[which(diff(sign(diff(h$y )))==-2)]
 vales <- h$x[which(diff(sign(diff(h$y )))==2)]
 
@@ -117,45 +95,57 @@ V2= picos[np]
 
 limite_y = h$y[which(h$x == V2)]/30
 V3 = h$x[-c(which(h$y > limite_y), which(h$x< V2) )][1]
-c(V1,V2,V3)
+
+
+limite_y = h$y[which(h$x == V2)]/2
+mX = h$x[-c(which(h$y > limite_y), which(h$x> V2) )]
+V4 = mX[length(mX)]
+c(V1,V2,V3,V4)
+V1 = V4
 #mod = moda(filtrada[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))])
 
 ##### Aplicacoes morfologicas #####
-binaria = filtrada
+binaria = janela
 
 binaria[binaria>V3] = 0
 binaria[binaria<V1] = 0
 binaria[binaria!=0] = 1
 
-plot_image(binaria, "Binaria Pre Morfo")
+#plot_image(binaria, "Binaria Pre Morfo")
+EBImage::display(binaria)
 
-kernel <- shapeKernel(c(5,5), type="disc")
+kernel <- shapeKernel(c(3,3), type="disc")
 binaria_pos = opening(binaria, kernel)
 binaria_pos = closing(binaria_pos, kernel)
 
 #binaria_pos = binaria
 plot_image(binaria_pos, "Binaria Pos Morfo")
-
+EBImage::display(binaria_pos)
 ###### Encontrar maior Componente da Binaria ######
-dim(binaria_pos)
 l = maior_componente(binaria_pos)
 maior_binaria = l$matrix
 tamanho_figado = l$max
 plot_image(maior_binaria, "Maior componente da Binaria")
+EBImage::display(maior_binaria)
 
 masc = fillHull(maior_binaria)
-plot_image(masc, "Masc")
+EBImage::display(masc)
+plot_image(masc, "Figado Bin I")
 
-morfo = masc * filtrada
+morfo = masc * janela
 #morfo = limpa_preto(morfo)
-plot_image(morfo, "Morfo pre morfo")
-
+EBImage::display(morfo/max(morfo))
+plot_image(morfo, "Figado I")
+m=masc
+masc=m
 kernel <- shapeKernel(c(7,7), type="disc")
-masc = opening(masc, kernel)
 masc = closing(masc, kernel)
-plot_image(masc, "Masc pos morfo")
-
-morfo = masc * filtrada
+masc = opening(masc, kernel)
+#plot_image(masc, "Masc pos morfo")
+EBImage::display(masc)
+morfo = masc * janela
+EBImage::display(morfo/max(morfo))
+?EBImage::display
 #morfo = limpa_preto(morfo)
 plot_image(morfo, "Morfo")
 
@@ -175,6 +165,8 @@ plot_image(morfo, "Morfo")
 # 
 # kernel = shapeKernel(c(5,5), type="disc")
 # 
+
+
 # limpo = cluster
 # limpo = closing(limpo, kernel)
 # limpo = opening(limpo, kernel)

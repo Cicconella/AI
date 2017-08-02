@@ -29,9 +29,7 @@ plot_image <- function(m,nome){
 }
 
 plot_matrix <- function(m, nome){
-  dx = dim(m)[1]
-  dy = dim(m)[2]
-  plot_image(m[nrow(m):1,],nome)  
+  plot_image(m[1:nrow(m),],nome)#nrow(m):1,],nome)  
 }
 
 limpa_preto <- function(m){
@@ -132,6 +130,37 @@ le_dicom = function(dir,filename){
   dicom <- readDICOMFile(fname)
   return(dicom$img)
 }
+
+##### Normaliza e pre processamento ######
+pre_normaliza = function(m){
+  #m=ori
+  m[m<0] = 0 #remove negativos
+  bin = m > otsu(m,range = c(0,max(m)))
+  binfill = fillHull(bin)
+  binmaior = maior_componente(binfill)$matrix
+  fabd = m*binmaior
+  #EBImage::display(fabd/max(fabd))
+  
+  h = density(fabd[fabd>500]) #500 corta os pulmoes
+  #plot(h)
+  #plot(h, xaxt='n')
+  #axis(side=1, at=seq(0,2000, 100), labels=seq(0,2000,100), las=2)
+  
+  significativo = (h$y[-c(1,2)]>2e-4)
+  
+  i1 = h$x[which(diff(significativo)==1)]
+  i2 = h$x[which(diff(significativo)==-1)]
+  lo = min(i1)
+  hi = max(i2)
+  normalizada = fabd
+  for(i in 1:dim(fabd)[1]){
+    for(j in 1:dim(fabd)[2]){
+      normalizada[i,j] = normaliza(fabd[i,j], lo, hi) 
+    }
+  }
+  return(normalizada)
+}
+
 
 # testes
 m = matrix(c(4,5,2,1,7,4,2,1,rep(5,8),seq(1,8),7,6,6,5,9,8,2,2,

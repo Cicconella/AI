@@ -22,13 +22,13 @@ library(EBImage) # Identificar Maior Componente de Imagem Binaria
 #library(wvtool) # Canny deteccao de bordas 
 
 # Plotar Imagens
-plota_janelada <- function(m,mini,maxi){
-  EBImage::display( (m-mini)/(maxi-mini) )
+plota_janelada <- function(m,mini,maxi, nome = "Imagem"){
+  EBImage::display( (m-mini)/(maxi-mini),title = nome )
 }
-plota_imagem <- function(m){
+plota_imagem <- function(m, nome = "Imagem"){
   mini = min(m)
   maxi = max(m)
-  plota_janelada(m,mini,maxi)
+  plota_janelada(m,mini,maxi,nome)
   #png(paste(home,"/plots/",nome,".png",sep=""),width = 512,height = 512)
   #image(t(m), col=grey(0:64*(max_escala)/64), axes=FALSE, xlab=nome, ylab="")
   #dev.off()

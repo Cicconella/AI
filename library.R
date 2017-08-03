@@ -1,4 +1,6 @@
 #source("https://bioconductor.org/biocLite.R")
+#biocLite("EBImage")
+
 #install.packages("oro.dicom")
 #install.packages("imager")
 #install.packages("mmand")
@@ -7,8 +9,6 @@
 #install.packages("radiomics")
 #install.packages("wvtool") #Pacote para a deteccao de bordas canny
 
-
-#biocLite("EBImage")
 
 library(oro.dicom) # Leitura do arquivo DICOM
 library(imager) # Blur da imagem
@@ -20,14 +20,17 @@ library(EBImage) # Identificar Maior Componente de Imagem Binaria
 library(wvtool) # Canny deteccao de bordas 
 
 # Plotar Imagens
-plot_image <- function(m,nome){
-  max_escala = 1#min(max(m)/255,1)
-  image(t(m), col=grey(0:64*(max_escala)/64), axes=FALSE, xlab=nome, ylab="")
-  png(paste(home,"/plots/",nome,".png",sep=""),width = 512,height = 512)
-  image(t(m), col=grey(0:64*(max_escala)/64), axes=FALSE, xlab=nome, ylab="")
-  dev.off()
+plota_janelada <- function(m,mini,maxi){
+  EBImage::display( (m-mini)/(maxi-mini) )
 }
-
+plota_imagem <- function(m){
+  mini = min(m)
+  maxi = max(m)
+  plota_janelada(m,mini,maxi)
+  #png(paste(home,"/plots/",nome,".png",sep=""),width = 512,height = 512)
+  #image(t(m), col=grey(0:64*(max_escala)/64), axes=FALSE, xlab=nome, ylab="")
+  #dev.off()
+}
 plot_matrix <- function(m, nome){
   plot_image(m[1:nrow(m),],nome)#nrow(m):1,],nome)  
 }

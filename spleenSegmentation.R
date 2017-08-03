@@ -1,5 +1,4 @@
 source("library.R")
-
 #### Encontra ossos e objetos brancos #####
 acha_brancos = function(m){
   #bin = m > otsu(m,range = c(0,max(m)))

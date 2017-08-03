@@ -1,5 +1,6 @@
 #source("https://bioconductor.org/biocLite.R")
 #install.packages("oro.dicom")
+#install.packages("oro.nifti")
 #install.packages("imager")
 #install.packages("mmand")
 #install.packages("e1071")
@@ -11,6 +12,7 @@
 #biocLite("EBImage")
 
 library(oro.dicom) # Leitura do arquivo DICOM
+library(oro.nifti) # Leitura do arquivo NIFTI
 #library(imager) # Blur da imagem
 library(mmand) # Operacoes morfologicas (abertura e fechamento) 
 library(e1071) #Clusterizacao FCM

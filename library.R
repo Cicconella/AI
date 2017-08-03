@@ -2,6 +2,7 @@
 #biocLite("EBImage")
 
 #install.packages("oro.dicom")
+#install.packages("oro.nifti")
 #install.packages("imager")
 #install.packages("mmand")
 #install.packages("e1071")
@@ -11,13 +12,14 @@
 
 
 library(oro.dicom) # Leitura do arquivo DICOM
-library(imager) # Blur da imagem
+library(oro.nifti) # Leitura do arquivo NIFTI
+#library(imager) # Blur da imagem
 library(mmand) # Operacoes morfologicas (abertura e fechamento) 
 library(e1071) #Clusterizacao FCM
 library(wavelets) # Realizar transformacao DWT
-library(radiomics) # Gerar a matrix GLCM e extrair features
+#library(radiomics) # Gerar a matrix GLCM e extrair features
 library(EBImage) # Identificar Maior Componente de Imagem Binaria
-library(wvtool) # Canny deteccao de bordas 
+#library(wvtool) # Canny deteccao de bordas 
 
 # Plotar Imagens
 plota_janelada <- function(m,mini,maxi){

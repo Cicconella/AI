@@ -1,7 +1,4 @@
 #### Libraries and functions ####
-#install.packages("oro.dicom")
-#biocLite("EBImage")
-
 source("library.R")
 
 #home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"

@@ -137,8 +137,6 @@ morfo = masc * janela
 #morfo = limpa_preto(morfo)
 plota_imagem(morfo)
 #plot_image(morfo, "Figado I")
-m=masc
-masc=m
 kernel <- shapeKernel(c(7,7), type="disc")
 masc = closing(masc, kernel)
 masc = opening(masc, kernel)

@@ -43,7 +43,7 @@ fname <-  paste(dir, filename, sep="")
 abdo <- readDICOMFile(fname)
 ori = abdo$img
 #plot_image(ori, "Original")
-EBImage::display(ori/max(ori))
+plota_imagem(ori)
 #hist(ori[ori>10], nc=1000,main = "Histograma Original")
 ##### Normalizar #####
 #lo = 800
@@ -55,7 +55,7 @@ EBImage::display(ori/max(ori))
 #  }
 #}
 norm = pre_normaliza(ori)
-EBImage::display(norm/max(norm))
+plota_imagem(norm)
 
 #hist(normalizada[normalizada>10], nc=1000,main = "Histograma Normalizada")
 

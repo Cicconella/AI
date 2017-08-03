@@ -1,16 +1,16 @@
 source("library.R")
 
-home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
-dir = "/Users/ludykong/MaChiron/Data/HCC Lirads 4/"
-dir = "/Users/ludykong/GDrive/MaChiron/Exames/Cisto/DICOM/"
+home = getwd() # "/Users/ludykong/MaChiron/MaChironGit"
+dir = "/media/cicconella/01D2FE834EA51BE0/Documents and Settings/Nina/Google Drive/"
+dir = "/Users/ludykong/GDrive/"
 
 #filename = 65643690#65643294
 
-filename = "1.2.840.113619.2.327.3.1091195278.193.1456136545.506.24.dcm"
+filename = "MaChiron/Exames/1775933/DICOM/ARTERIAL/12760.dcm"
 fname <-  paste(dir, filename, sep="")
 
 dicom <- readDICOMFile(fname)
-plot_image(dicom$img, "Original")
+plot_imagem(dicom$img, "Original")
 ori = dicom$img
 hdr = dicom$hdr
 ##### Normalizar #####

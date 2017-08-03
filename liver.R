@@ -70,8 +70,7 @@ janela = janela[,-c(min_x:max_x)]
 janela = janela[-c(min_y:max_y),]
 janela = limpa_preto(janela)
 
-#plot_image(janela, "Janela")
-EBImage::display(janela/max(janela))
+plota_imagem(janela)
 
 ##### Filtro anisotropico #####
 #filtrada = as.cimg(janela)
@@ -116,8 +115,7 @@ binaria[binaria>V3] = 0
 binaria[binaria<V1] = 0
 binaria[binaria!=0] = 1
 
-#plot_image(binaria, "Binaria Pre Morfo")
-EBImage::display(binaria)
+plota_imagem(binaria)
 
 kernel <- shapeKernel(c(3,3), type="disc")
 binaria_pos = opening(binaria, kernel)
@@ -125,31 +123,31 @@ binaria_pos = closing(binaria_pos, kernel)
 
 #binaria_pos = binaria
 #plot_image(binaria_pos, "Binaria Pos Morfo")
-EBImage::display(binaria_pos)
+plota_imagem(binaria_pos)
+
 ###### Encontrar maior Componente da Binaria ######
 l = maior_componente(binaria_pos)
 maior_binaria = l$matrix
 tamanho_figado = l$max
 #plot_image(maior_binaria, "Maior componente da Binaria")
-EBImage::display(maior_binaria)
+plota_imagem(maior_binaria)
 
 masc = fillHull(maior_binaria)
-EBImage::display(masc)
+plota_imagem(masc)
 #plot_image(masc, "Figado Bin I")
 
 morfo = masc * janela
 #morfo = limpa_preto(morfo)
-EBImage::display(morfo/max(morfo))
+plota_imagem(morfo)
 #plot_image(morfo, "Figado I")
 m=masc
 masc=m
 kernel <- shapeKernel(c(7,7), type="disc")
 masc = closing(masc, kernel)
 masc = opening(masc, kernel)
-#plot_image(masc, "Masc pos morfo")
-EBImage::display(masc)
+plota_imagem(masc)
 morfo = masc * janela
-EBImage::display(morfo/max(morfo))
+plota_imagem(morfo/max(morfo))
 #morfo = limpa_preto(morfo)
 #plot_image(morfo, "Morfo")
 
@@ -186,7 +184,7 @@ EBImage::display(morfo/max(morfo))
 detalhes = morfo
 
 #plot_matrix(detalhes, "Lesao")
-EBImage::display(detalhes/max(detalhes))
+plota_imagem(detalhes/max(detalhes))
 
 # Recorta Janela quadrada de lado par
 M = min(dim(detalhes)) 

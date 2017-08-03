@@ -4,29 +4,34 @@
 
 source("library.R")
 
-home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
+#home = getwd()# "/Users/ludykong/MaChiron/MaChironGit"
 
 #### Calcula matriz onde cada elemento e a media dos elementos vizinhos na original
-matriz_media = function(m){
-  mr = m
-  dx = dim(m)[1]
-  dy = dim(m)[2]
-  for(i in 1:dx){
-    for (j in 1:dy){
-      v = c(m[i,j])
-      if (i>1) v= c(v,m[i-1,j])
-      if (i<dx) v= c(v,m[i+1,j])
-      if (j>1) v= c(v,m[i,j-1])
-      if (j<dy) v= c(v,m[i,j+1])
-      mr[i,j] = mean(v)
-    }
-  }
-  return (mr)
-}
+# matriz_media = function(m){
+#   mr = m
+#   dx = dim(m)[1]
+#   dy = dim(m)[2]
+#   for(i in 1:dx){
+#     for (j in 1:dy){
+#       v = c(m[i,j])
+#       if (i>1) v= c(v,m[i-1,j])
+#       if (i<dx) v= c(v,m[i+1,j])
+#       if (j>1) v= c(v,m[i,j-1])
+#       if (j<dy) v= c(v,m[i,j+1])
+#       mr[i,j] = mean(v)
+#     }
+#   }
+#   return (mr)
+# }
 
 ##### Nossos dados ###### 
-dir = "/Users/ludykong/GDrive/MaChiron/Exames/1775933/DICOM/ARTERIAL/"
-filename = 12865
+#dir da ana
+dir = "/media/cicconella/01D2FE834EA51BE0/Documents and Settings/Nina/Google Drive/"
+
+#dir do luis
+#dir = "/Users/ludykong/GDrive/"
+
+filename = "MaChiron/Exames/1775933/DICOM/ARTERIAL/12865.dcm"
 #files = list.files(dir)
 #if (files[length(files)] == "Icon\r"){
 #  files = files[-length(files)]
@@ -119,23 +124,23 @@ binaria_pos = opening(binaria, kernel)
 binaria_pos = closing(binaria_pos, kernel)
 
 #binaria_pos = binaria
-plot_image(binaria_pos, "Binaria Pos Morfo")
+#plot_image(binaria_pos, "Binaria Pos Morfo")
 EBImage::display(binaria_pos)
 ###### Encontrar maior Componente da Binaria ######
 l = maior_componente(binaria_pos)
 maior_binaria = l$matrix
 tamanho_figado = l$max
-plot_image(maior_binaria, "Maior componente da Binaria")
+#plot_image(maior_binaria, "Maior componente da Binaria")
 EBImage::display(maior_binaria)
 
 masc = fillHull(maior_binaria)
 EBImage::display(masc)
-plot_image(masc, "Figado Bin I")
+#plot_image(masc, "Figado Bin I")
 
 morfo = masc * janela
 #morfo = limpa_preto(morfo)
 EBImage::display(morfo/max(morfo))
-plot_image(morfo, "Figado I")
+#plot_image(morfo, "Figado I")
 m=masc
 masc=m
 kernel <- shapeKernel(c(7,7), type="disc")
@@ -145,9 +150,8 @@ masc = opening(masc, kernel)
 EBImage::display(masc)
 morfo = masc * janela
 EBImage::display(morfo/max(morfo))
-?EBImage::display
 #morfo = limpa_preto(morfo)
-plot_image(morfo, "Morfo")
+#plot_image(morfo, "Morfo")
 
 ##### FCM #####
 #media_morfo = matriz_media(morfo)
@@ -181,21 +185,21 @@ plot_image(morfo, "Morfo")
 ##### Extracao de caracteristicas de textura #####
 detalhes = morfo
 
-plot_matrix(detalhes, "Lesao")
+#plot_matrix(detalhes, "Lesao")
+EBImage::display(detalhes/max(detalhes))
 
 # Recorta Janela quadrada de lado par
 M = min(dim(detalhes)) 
 if (M%%2 == 1) M = M-1
 detalhes = detalhes[1:M, 1:M]
-plot_matrix(detalhes, "Janela Detalhes")
+#plot_matrix(detalhes, "Janela Detalhes")
 
 dwt_detalhes=dwt_matrix(detalhes)
 dwt1 = dwt_detalhes[1:M/2,1:M/2]
-plot_matrix(dwt_detalhes, "Detalhes")
-plot_matrix(dwt1, "Detalhes 1Q")
+EBImage::display(dwt1/max(dwt1))
+#plot_matrix(dwt_detalhes, "Detalhes")
+#plot_matrix(dwt1, "Detalhes 1Q")
 # Extracao de features de textura com a matrix de dependencia de niveis de cinza (GLCM)
-m = glcm(detalhes, angle=0,d=1)
-calc_features(m) #quais features usaremos depende da rede neural
+#m = glcm(detalhes, angle=0,d=1)
+#calc_features(m) #quais features usaremos depende da rede neural
 
-
-#TESTE

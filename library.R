@@ -11,13 +11,13 @@
 #biocLite("EBImage")
 
 library(oro.dicom) # Leitura do arquivo DICOM
-library(imager) # Blur da imagem
+#library(imager) # Blur da imagem
 library(mmand) # Operacoes morfologicas (abertura e fechamento) 
 library(e1071) #Clusterizacao FCM
 library(wavelets) # Realizar transformacao DWT
-library(radiomics) # Gerar a matrix GLCM e extrair features
+#library(radiomics) # Gerar a matrix GLCM e extrair features
 library(EBImage) # Identificar Maior Componente de Imagem Binaria
-library(wvtool) # Canny deteccao de bordas 
+#library(wvtool) # Canny deteccao de bordas 
 
 # Plotar Imagens
 plot_image <- function(m,nome){

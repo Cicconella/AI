@@ -8,18 +8,22 @@ source("library.R")
 #dir do luis
 dir = "/Users/ludykong/GDrive/"
 
-N_nii = 0
-N_img = 63
-filename = paste0("MaChiron/Exames/Teste LITS/volume-",N_nii,".nii")
+N_nii = 6
+N_img = 460
+filename = paste0("MaChiron/Exames/TreinoLITS/volume-",N_nii,".nii")
 
 fname <-  paste(dir, filename, sep="")
 
+# So uma vez
 abdo <- readNIfTI(fname)
-#image(abdo,plot.type="single",z=60)
+pixel_data = pixdim(abdo)
+abdo_data = img_data(abdo)
+dim(abdo_data)
+rm(abdo)
+gc(reset=T)
 
 ##### Seleciona uma faixa #####
-m = img_data(abdo)
-m = m[,,N_img]
+m = abdo_data[,,N_img]
 plota_imagem(m,"Original")
 
 m = m + abs(min(m[m!=min(m)]))
@@ -36,9 +40,7 @@ janela = norm
 ##### Analise do histograma #####
 lim_inf = 50
 lim_sup = 200
-#dp = 35
-#norm = round(norm)
-#hist(janela[-c(which(janela<lim_inf), which(janela>lim_sup))],nc = 256)#[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))], nc = 256)
+#hist(janela[-c(which(janela<lim_inf), which(janela>lim_sup))], col="blue")#[-c(which(filtrada<lim_inf), which(filtrada>lim_sup))], nc = 256)
 h = density(janela[-c(which(janela<lim_inf), which(janela>lim_sup))])
 #plot(h)
 picos <- h$x[which(diff(sign(diff(h$y )))==-2)]
@@ -64,11 +66,9 @@ binaria[binaria<V1] = 0
 binaria[binaria!=0] = 1
 
 #plota_imagem(binaria, "1a binaria")
-
 kernel <- shapeKernel(c(3,3), type="disc")
-binaria_pos = opening(binaria, kernel)
-binaria_pos = closing(binaria_pos, kernel)
-
+binaria_pos = closing(binaria, kernel)
+binaria_pos = opening(binaria_pos, kernel)
 #plota_imagem(binaria_pos, "1a binaria+OM")
 
 ###### Encontrar maior Componente da Binaria ######
@@ -92,11 +92,32 @@ morfo = masc * janela
 plota_imagem(morfo,"Morfo pos OM")
 
 ##### Comparar o gabarito LiTS #####
-filename = "MaChiron/Exames/Teste LITS/segmentation-0.nii"
+filename = paste0("MaChiron/Exames/TreinoLITS/segmentation-",N_nii,".nii")
 fname <-  paste(dir, filename, sep="")
 
+#Rodar so 1 vez por exame
 seg <- readNIfTI(fname)
+seg_data = img_data(seg)
 
-seg_m = img_data(seg)
-seg_m = seg_m[,,N_img]
+rm(seg)
+gc(reset=T)
+
+seg_m = seg_data[,,N_img]
 plota_imagem(seg_m,"Gabarito LiTS Original")
+
+table(seg_m)
+table(masc == seg_m)
+MASC1 = which(masc==1)
+MASC0 = which(masc==0)
+GABA1 = which(seg_m==1 | seg_m==2)
+GABA0 = which(seg_m==0)
+
+TP = length(intersect(MASC1,GABA1))
+TN = length(intersect(MASC0,GABA0))
+FP = length(intersect(MASC1,GABA0))
+FN = length(intersect(MASC0,GABA1))
+PRE = TP/(TP+FP)
+SENSI = TP/(TP+FN)
+ESPE = TN/(TN+FP)
+DICE = 2*TP/(2*TP + FP + FN)
+JAC = TP/(TP + FP + FN)

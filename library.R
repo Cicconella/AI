@@ -168,9 +168,9 @@ pre_normaliza = function(m){
 
 
 # testes
-m = matrix(c(4,5,2,1,7,4,2,1,rep(5,8),seq(1,8),7,6,6,5,9,8,2,2,
-             4,5,2,1,7,4,2,1,rep(5,8),seq(1,8),7,6,6,5,9,8,2,2),8,byrow=T)
-m2 = dwt_matrix(m)
-m5 = idwt_matrix(m2)
-m3 = extrai1Q(m2)
-m4 = idwt_matrix(m3)
+#m = matrix(c(4,5,2,1,7,4,2,1,rep(5,8),seq(1,8),7,6,6,5,9,8,2,2,
+#             4,5,2,1,7,4,2,1,rep(5,8),seq(1,8),7,6,6,5,9,8,2,2),8,byrow=T)
+#m2 = dwt_matrix(m)
+#m5 = idwt_matrix(m2)
+#m3 = extrai1Q(m2)
+#m4 = idwt_matrix(m3)

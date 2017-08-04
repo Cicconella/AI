@@ -86,7 +86,7 @@ tamanho_figado = l$max
 #plota_imagem(maior_binaria, "Maior_Comp")
 
 masc = fillHull(maior_binaria)
-<<<<<<< HEAD
+
 plota_imagem(masc)
 
 morfo = masc * janela

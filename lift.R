@@ -23,14 +23,27 @@ rm(abdo)
 gc(reset=T)
 
 ##### Seleciona uma faixa #####
+<<<<<<< HEAD
 m = abdo_data[,,N_img]
+=======
+m = img_data(abdo)
+
+m = m[,,50]
+plota_imagem(m)
+
+m = m[,,N_img]
+>>>>>>> c371166e3361cb5ece81155232de7a203cd22f3c
 plota_imagem(m,"Original")
 
 m = m + abs(min(m[m!=min(m)]))
 #plota_imagem(m,"Sem Negativos")
 
 norm = pre_normaliza(m)
+
+plota_imagem(norm)
+
 plota_imagem(norm,"Normalizada")
+
 
 
 ##### Recorte da janela com o figado #####  
@@ -78,27 +91,50 @@ tamanho_figado = l$max
 #plota_imagem(maior_binaria, "Maior_Comp")
 
 masc = fillHull(maior_binaria)
+<<<<<<< HEAD
+plota_imagem(masc)
+
+morfo = masc * janela
+#plota_imagem(morfo)
 #plota_imagem(masc, "maior_Comp_Filled")
 
 morfo = masc * janela
 #plota_imagem(morfo,"Morfo sem OM final")
 
+
+m=masc
+masc=m
 kernel <- shapeKernel(c(7,7), type="disc")
 masc = closing(masc, kernel)
 masc = opening(masc, kernel)
 #plota_imagem(masc,"Mascara pos OM")
 
 morfo = masc * janela
+
+#plota_imagem(morfo)
+
+#plota_imagem(maior_binaria)
+#plota_imagem(masc)
+
+##### Comparar o gabarito LiTS #####
+filename = "MaChiron/Exames/Teste LITS/segmentation-28.nii"
+
 plota_imagem(morfo,"Morfo pos OM")
 
 ##### Comparar o gabarito LiTS #####
+<<<<<<< HEAD
 filename = paste0("MaChiron/Exames/TreinoLITS/segmentation-",N_nii,".nii")
+=======
+filename = "MaChiron/Exames/Teste LITS/segmentation-0.nii"
+
+>>>>>>> c371166e3361cb5ece81155232de7a203cd22f3c
 fname <-  paste(dir, filename, sep="")
 
 #Rodar so 1 vez por exame
 seg <- readNIfTI(fname)
 seg_data = img_data(seg)
 
+<<<<<<< HEAD
 rm(seg)
 gc(reset=T)
 
@@ -121,3 +157,16 @@ SENSI = TP/(TP+FN)
 ESPE = TN/(TN+FP)
 DICE = 2*TP/(2*TP + FP + FN)
 JAC = TP/(TP + FP + FN)
+=======
+m = img_data(abdo)
+m = m[,,60]
+plota_imagem(m)
+plota_imagem(masc)
+
+
+
+seg_m = img_data(seg)
+seg_m = seg_m[,,N_img]
+plota_imagem(seg_m,"Gabarito LiTS Original")
+
+>>>>>>> c371166e3361cb5ece81155232de7a203cd22f3c

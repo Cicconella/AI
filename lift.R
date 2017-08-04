@@ -18,14 +18,14 @@ abdo <- readNIfTI(fname)
 
 ##### Seleciona uma faixa #####
 m = img_data(abdo)
-m = m[,,60]
+m = m[,,50]
 plota_imagem(m)
 
 m = m + abs(min(m[m!=min(m)]))
 #plota_imagem(m)
 
 norm = pre_normaliza(m)
-#plota_imagem(norm)
+plota_imagem(norm)
 
 
 ##### Recorte da janela com o figado #####  
@@ -97,7 +97,7 @@ morfo = masc * janela
 #plota_imagem(masc)
 
 ##### Comparar o gabarito LiTS #####
-filename = "MaChiron/Exames/Teste LITS/segmentation-0.nii"
+filename = "MaChiron/Exames/Teste LITS/segmentation-28.nii"
 
 fname <-  paste(dir, filename, sep="")
 

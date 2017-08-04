@@ -19,7 +19,7 @@ abdo <- readNIfTI(fname)
 ##### Seleciona uma faixa #####
 m = img_data(abdo)
 m = m[,,60]
-#plota_imagem(m)
+plota_imagem(m)
 
 m = m + abs(min(m[m!=min(m)]))
 #plota_imagem(m)
@@ -78,21 +78,23 @@ tamanho_figado = l$max
 #plota_imagem(maior_binaria)
 
 masc = fillHull(maior_binaria)
-#plota_imagem(masc)
+plota_imagem(masc)
 
 morfo = masc * janela
-plota_imagem(morfo)
+#plota_imagem(morfo)
 
+m=masc
+masc=m
 kernel <- shapeKernel(c(7,7), type="disc")
 masc = closing(masc, kernel)
 masc = opening(masc, kernel)
 plota_imagem(masc)
 
 morfo = masc * janela
-plota_imagem(morfo)
+#plota_imagem(morfo)
 
-plota_imagem(maior_binaria)
-plota_imagem(masc)
+#plota_imagem(maior_binaria)
+#plota_imagem(masc)
 
 ##### Comparar o gabarito LiTS #####
 filename = "MaChiron/Exames/Teste LITS/segmentation-0.nii"
@@ -105,3 +107,6 @@ abdo <- readNIfTI(fname)
 m = img_data(abdo)
 m = m[,,60]
 plota_imagem(m)
+plota_imagem(masc)
+
+

@@ -8,17 +8,18 @@ source("library.R")
 #dir do luis
 dir = "/Users/ludykong/GDrive/"
 
-filename = "MaChiron/Exames/Teste LITS/volume-0.nii"
+N_nii = 0
+N_img = 63
+filename = paste0("MaChiron/Exames/Teste LITS/volume-",N_nii,".nii")
 
 fname <-  paste(dir, filename, sep="")
 
 abdo <- readNIfTI(fname)
-#abdo
 #image(abdo,plot.type="single",z=60)
 
 ##### Seleciona uma faixa #####
 m = img_data(abdo)
-m = m[,,65]
+m = m[,,N_img]
 plota_imagem(m,"Original")
 
 m = m + abs(min(m[m!=min(m)]))
@@ -97,5 +98,5 @@ fname <-  paste(dir, filename, sep="")
 seg <- readNIfTI(fname)
 
 seg_m = img_data(seg)
-seg_m = seg_m[,,65]
+seg_m = seg_m[,,N_img]
 plota_imagem(seg_m,"Gabarito LiTS Original")
